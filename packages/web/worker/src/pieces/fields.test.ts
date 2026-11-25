@@ -2,10 +2,9 @@ import { describe, test, expect } from 'vitest'
 import type { Config } from '@luzzle/web.config'
 import { resolveFromFrontmatter } from './fields.js'
 
-type PieceConfig = Config['pieces'][number]
+type PieceConfig = Config['pieces'][string]
 
 const fullConfig = {
-	type: 'books',
 	fields: {
 		title: 'title',
 		date_consumed: 'date_read',
@@ -32,7 +31,6 @@ describe('resolveFromFrontmatter', () => {
 
 	test('returns undefined summary when field not in config', () => {
 		const config = {
-			type: 'notes',
 			fields: { title: 'title', date_consumed: 'date' },
 		} as unknown as PieceConfig
 
@@ -42,7 +40,6 @@ describe('resolveFromFrontmatter', () => {
 
 	test('returns empty keywords when tags field not in config', () => {
 		const config = {
-			type: 'notes',
 			fields: { title: 'title', date_consumed: 'date' },
 		} as unknown as PieceConfig
 

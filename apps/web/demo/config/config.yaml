@@ -58,7 +58,7 @@ pages:
       home: true
 
 pieces:
-  - type: books
+  books:
     templates:
       icon:
         file: ./content/templates/book/icon.svelte
@@ -88,7 +88,7 @@ pieces:
       tags: keywords
       media:
         - cover
-  - type: films
+  films:
     templates:
       icon:
         file: ./content/templates/film/icon.svelte
@@ -120,7 +120,7 @@ pieces:
       media:
         - poster
         - backdrop
-  - type: snippets
+  snippets:
     templates:
       icon:
         file: ./content/templates/snippet/icon.svelte
@@ -159,7 +159,7 @@ pieces:
         - files[*].file
       highlight:
         - files[*].file
-  - type: words
+  words:
     templates:
       icon:
         file: ./content/templates/word/icon.svelte
@@ -176,7 +176,7 @@ pieces:
         - representative_image
       attachments:
         - attachments
-  - type: articles
+  articles:
     templates:
       icon:
         file: ./content/templates/article/icon.svelte
@@ -205,7 +205,7 @@ pieces:
       tags: keywords
       media:
         - banner
-  - type: recipes
+  recipes:
     templates:
       icon:
         file: ./content/templates/recipe/icon.svelte
@@ -254,7 +254,7 @@ pieces:
       tags: keywords
       media:
         - photo
-  - type: music
+  music:
     templates:
       icon:
         file: ./content/templates/music/icon.svelte
@@ -284,7 +284,7 @@ pieces:
       tags: keywords
       media:
         - cover
-  - type: video-games
+  video-games:
     templates:
       icon:
         file: ./content/templates/video-game/icon.svelte
@@ -313,7 +313,7 @@ pieces:
       tags: keywords
       media:
         - cover
-  - type: tabletop-games
+  tabletop-games:
     templates:
       icon:
         file: ./content/templates/tabletop-game/icon.svelte
@@ -339,7 +339,7 @@ pieces:
       tags: keywords
       media:
         - cover
-  - type: generic
+  generic:
     fields:
       title: title
       summary: summary

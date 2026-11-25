@@ -46,9 +46,8 @@ function makeInput(): TransformInput {
 		},
 		config: validateConfig(
 			{
-				pieces: [
-					{
-						type: 'snippets',
+				pieces: {
+					snippets: {
 						fields: {
 							title: 'title',
 							date_consumed: 'date',
@@ -56,7 +55,7 @@ function makeInput(): TransformInput {
 							highlight: ['files[*].file'],
 						},
 					},
-				],
+				},
 			},
 			{}
 		),
@@ -89,7 +88,7 @@ afterEach(async () => {
 
 test('does not read or highlight attachments without explicit selection', async () => {
 	const input = makeInput()
-	delete input.config.pieces[0].fields.highlight
+	delete input.config.pieces.snippets.fields.highlight
 
 	expect(await run(input)).toEqual([])
 	expect(createReadStream).not.toHaveBeenCalled()
@@ -98,7 +97,7 @@ test('does not read or highlight attachments without explicit selection', async 
 
 test('highlights selected originals once, leaving other attachments unread', async () => {
 	const input = makeInput()
-	input.config.pieces[0].fields.highlight?.push('source')
+	input.config.pieces.snippets.fields.highlight?.push('source')
 	input.webPiece.json_metadata = JSON.stringify({
 		files: [{ file: 'code' }],
 		source: 'code',

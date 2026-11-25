@@ -13,6 +13,8 @@ export function createInputSchema(schema: TSchema): TSchema {
 			);
 			if (!node.required?.length) delete node.required;
 			Object.values(node.properties).forEach(relax);
+		} else if (TypeGuard.IsRecord(node)) {
+			Object.values(node.patternProperties).forEach(relax);
 		} else if (TypeGuard.IsArray(node)) {
 			relax(node.items);
 		} else if (TypeGuard.IsUnion(node)) {

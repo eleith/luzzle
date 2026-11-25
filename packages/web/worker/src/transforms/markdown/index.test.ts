@@ -30,7 +30,7 @@ const makeConfig = (): Config =>
 	({
 		url: { app: 'http://localhost' },
 		theme: { markdown: { code: themes } },
-		pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date_consumed' } }],
+		pieces: { books: { fields: { title: 'title', date_consumed: 'date_consumed' } } },
 	}) as unknown as Config
 
 const makePieces = (fields: Array<Record<string, unknown>> = []): Pieces =>

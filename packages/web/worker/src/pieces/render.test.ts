@@ -29,12 +29,12 @@ const TEMP_DIR = path.join(import.meta.dirname, 'temp-render-fixtures')
 
 const makeConfig = (): TemplateConfig => {
 	const config: TemplateConfig = validateConfig({
-		pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }],
+		pieces: { books: { fields: { title: 'title', date_consumed: 'date' } } },
 	})
 	config.paths.config = path.join(TEMP_DIR, 'config.yaml')
 	config.paths.assets = './assets'
 	config.paths.static = './static'
-	config.pieces[0].templates = {
+	config.pieces.books.templates = {
 		icon: { name: 'default' },
 		page: { name: 'default' },
 		opengraph: {
@@ -117,7 +117,7 @@ describe('pieces/render', () => {
 			{/if}
 			<style>div { width:300px; height:300px; background-size:cover }</style>`
 		)
-		config.pieces[0].templates!.opengraph = { name: 'default', file, mapping: { jacket: 'cover' } }
+		config.pieces.books.templates!.opengraph = { name: 'default', file, mapping: { jacket: 'cover' } }
 		const assets = [
 			{
 				asset_key: 'img-key',
@@ -157,7 +157,7 @@ describe('pieces/render', () => {
 
 	test('renders the packaged default component to a PNG without a piece configuration', async () => {
 		const config = makeConfig()
-		config.pieces = []
+		config.pieces = {}
 		expectPng(await renderOpengraphPng(makePiece(), [], config))
 	})
 

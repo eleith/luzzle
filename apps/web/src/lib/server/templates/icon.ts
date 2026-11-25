@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
 import type { AppConfig } from '#lib/server/config.js'
@@ -20,7 +21,7 @@ export type IconDesign = {
 type IconOptions = { filename: string; mapping?: FieldMappings; context: RenderContext }
 
 export async function preloadAuthoredIcons(config: AppConfig) {
-	for (const piece of config.pieces) {
+	for (const piece of Object.values(config.pieces)) {
 		const icon = piece.templates?.icon
 		if (!icon || !('file' in icon)) continue
 		const filename = resolve(icon.file)
@@ -37,7 +38,7 @@ export function loadPublishedIcon(type: string, config: AppConfig) {
 }
 
 function loadAuthoredIcon(type: string, config: AppConfig, context: RenderContext) {
-	const icon = config.pieces.find((piece) => piece.type === type)?.templates?.icon
+	const icon = getPieceConfig(config.pieces, type)?.templates?.icon
 	if (!icon || !('file' in icon)) return
 	// Resolve beside ./config.yaml (the launcher's path), not its symlink target.
 	return loadIconDesign({

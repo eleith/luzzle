@@ -7,7 +7,7 @@ vi.mock('#lib/server/database/index.js', async () => {
 	const { createAppDb } = await import('@luzzle/web.db')
 	return { db: createAppDb(':memory:') }
 })
-vi.mock('#lib/server/config.js', () => ({ config: { pieces: [{ type: 'book' }] } }))
+vi.mock('#lib/server/config.js', () => ({ config: { pieces: { book: {} } } }))
 vi.mock('#lib/pieces/icon-listing/render.server.js', () => ({ renderPieceIcons: vi.fn() }))
 
 function tagPage(tag: string, query = '') {

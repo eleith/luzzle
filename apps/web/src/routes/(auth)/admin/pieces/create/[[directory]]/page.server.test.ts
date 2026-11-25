@@ -14,7 +14,7 @@ import { actions, load } from './+page.server'
 vi.mock('#lib/server/pieces.js', () => ({ getPieces: vi.fn() }))
 vi.mock('#lib/server/config.js', () => ({
 	config: {
-		pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }],
+		pieces: { books: { fields: { title: 'title', date_consumed: 'date' } } },
 		ai: { provider: 'google', api_key: 'test-key' }
 	}
 }))
@@ -27,7 +27,7 @@ beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}))
 afterEach(() => {
 	vi.resetAllMocks()
 	vi.restoreAllMocks()
-	config.pieces[0].fields.title = 'title'
+	config.pieces.books.fields.title = 'title'
 })
 
 function setupCreate() {
@@ -89,7 +89,7 @@ test('load preserves type and directory choices', async () => {
 
 test('plain create initializes, sets the configured title purely and writes exclusively', async () => {
 	const { markdown, piece, formData, event } = setupCreate()
-	config.pieces[0].fields.title = 'metadata.title'
+	config.pieces.books.fields.title = 'metadata.title'
 	formData.set('name', 'https://example.test/title')
 	await expect(actions.create(event)).rejects.toMatchObject({
 		status: 303,
@@ -148,7 +148,7 @@ test.each([
 
 test('plain create requires a configured title field', async () => {
 	const { piece, event } = setupCreate()
-	config.pieces[0].fields.title = ''
+	config.pieces.books.fields.title = ''
 	expect(await actions.create(event)).toMatchObject({ status: 400 })
 	expect(piece.create).not.toHaveBeenCalled()
 	expect(piece.write).not.toHaveBeenCalled()

@@ -11,9 +11,8 @@ vi.mock('#lib/server/config.js', async () => {
 			...base,
 			auth: oidcAuth,
 			ai: { provider: 'google', api_key: 'private-ai-key' },
-			pieces: [
-				{
-					type: 'runtime-kind',
+			pieces: {
+				'runtime-kind': {
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: {
 						icon: { name: 'default', mapping: {} },
@@ -21,7 +20,7 @@ vi.mock('#lib/server/config.js', async () => {
 						opengraph: { name: 'default', mapping: {} }
 					}
 				}
-			],
+			},
 			content: {
 				text: { title: 'Public title', description: 'Public description' },
 				images: base.content.images,

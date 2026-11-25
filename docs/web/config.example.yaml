@@ -42,7 +42,7 @@ content:
 # Match this type and these frontmatter selectors to your own archive.
 # For example: hello.notes.md, with title and date_published in its frontmatter.
 pieces:
-  - type: notes
+  notes:
     fields:
       title: title
       summary: summary

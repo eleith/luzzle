@@ -79,7 +79,7 @@ and neither changes or validates your YAML.
 ## Use a local icon on piece listings
 
 To replace the icons on `/pieces/books`, put a **trusted, operator-authored**
-`.svelte` file in the web service’s content mount. Under `templates` in the `pieces` entry for `books`, set:
+`.svelte` file in the web service’s content mount. Under `pieces.books.templates`, set:
 
 ```yaml
 icon:
@@ -211,7 +211,7 @@ Templates read the metadata fields you map to them. For example, to use the auth
 
 ```yaml
 pieces:
-  - type: books
+  books:
     fields:
       title: title
       date_consumed: date_read

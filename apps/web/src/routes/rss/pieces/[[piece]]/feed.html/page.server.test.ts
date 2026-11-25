@@ -3,7 +3,7 @@ import { load } from './+page.server'
 
 const { config, getPiecesForFeed, loadPageMarkdown } = vi.hoisted(() => ({
 	config: {
-		pieces: [{ type: 'field-notes' }, { type: 'specimens' }, { type: 'field / notes & café' }],
+		pieces: { 'field-notes': {}, specimens: {}, 'field / notes & café': {} },
 		url: { app: 'https://garden.example/base' },
 		pages: { feed: { about: undefined as string | undefined, links: true } }
 	},
@@ -26,7 +26,7 @@ beforeEach(() => {
 	loadPageMarkdown.mockResolvedValue(undefined)
 })
 
-test.each(config.pieces.map(({ type }) => type))(
+test.each(Object.keys(config.pieces))(
 	'HTML feed %s retains metadata without a prepared bundle',
 	async (type) => {
 		const result = await load(event(type))

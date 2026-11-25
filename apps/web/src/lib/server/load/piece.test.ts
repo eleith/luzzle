@@ -13,7 +13,7 @@ const { query, hydratePublicPiece, config } = vi.hoisted(() => ({
 	},
 	hydratePublicPiece: vi.fn(),
 	config: {
-		pieces: [{ type: 'books' }],
+		pieces: { books: {} },
 		url: { app: 'https://app.example', luzzle_assets: '' },
 		content: { text: { title: 'Garden' } }
 	}

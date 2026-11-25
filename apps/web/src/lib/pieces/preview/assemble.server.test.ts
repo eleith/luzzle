@@ -5,11 +5,10 @@ import { createPieceHelpers, previewOutputUrl, type PublicWebPieceAsset } from '
 import { makeConfig } from '#lib/server/config.fixture.js'
 import { assemblePreview, type PreviewWorkerResult } from './assemble.server.js'
 
-const pieceConfig: Config['pieces'][number] = {
+const pieceConfig: Config['pieces'][string] = {
 	...makeConfig({
-		pieces: [
-			{
-				type: 'book',
+		pieces: {
+			book: {
 				fields: {
 					title: 'details.title',
 					summary: 'details.summary',
@@ -19,8 +18,8 @@ const pieceConfig: Config['pieces'][number] = {
 					attachments: ['files']
 				}
 			}
-		]
-	}).pieces[0],
+		}
+	}).pieces.book,
 	templates: {
 		icon: { name: 'default', mapping: { image: 'media.cover' } },
 		page: { name: 'default', mapping: { image: 'media.gallery[0].key' } },
@@ -260,9 +259,9 @@ test('preserves piece metadata and the existing comma, accent, and duplicate tag
 })
 
 test('handles missing optional fields without inventing assets or tags and retains slug fallback', () => {
-	const minimalConfig: Config['pieces'][number] = makeConfig({
-		pieces: [{ type: 'book', fields: { title: 'title', date_consumed: 'read_on' } }]
-	}).pieces[0]
+	const minimalConfig: Config['pieces'][string] = makeConfig({
+		pieces: { book: { fields: { title: 'title', date_consumed: 'read_on' } } }
+	}).pieces.book
 	const assembled = assemblePreview(
 		workerResult({ sanitizedFrontmatter: {}, slug: '', filePath: 'Café Draft.book.md' }),
 		minimalConfig

@@ -1,5 +1,5 @@
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import type { RequestHandler } from './$types'
-import { config } from '#lib/server/config.js'
 import { getPieces } from '#lib/server/pieces.js'
 import { getPiecePublicationState } from '#lib/pieces/publication.server.js'
 import { getOpenWorkflow, getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
@@ -30,7 +30,7 @@ function validatePiecePath(value: unknown): string | Response {
 		return Response.json({ message: 'Expected a canonical Markdown filePath' }, { status: 400 })
 	}
 	const { type, format } = getPieces().parseFilename(value)
-	if (!type || format !== '.md' || !config.pieces.some((piece) => piece.type === type)) {
+	if (!type || format !== '.md' || !isConfiguredPieceType(type)) {
 		return Response.json({ message: 'Unsupported piece type' }, { status: 400 })
 	}
 	return value

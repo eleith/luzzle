@@ -17,9 +17,8 @@ describe('buildHealthConfigSummary', () => {
 
 	test('summarizes piece types by their configured fields and selected template IDs', () => {
 		const config = makeConfig({
-			pieces: [
-				{
-					type: 'article',
+			pieces: {
+				article: {
 					fields: { title: 'title', date_consumed: 'read_date', media: ['images', 'cover'] },
 					templates: {
 						icon: { name: 'default', mapping: { image: { field: 'cover' } } },
@@ -27,11 +26,10 @@ describe('buildHealthConfigSummary', () => {
 						opengraph: { name: 'default', mapping: {} }
 					}
 				},
-				{
-					type: 'bookmark',
+				bookmark: {
 					fields: { title: 'title', date_consumed: 'date' }
 				}
-			]
+			}
 		})
 
 		const summary = buildHealthConfigSummary(config)

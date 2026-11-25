@@ -44,7 +44,7 @@ beforeAll(async () => {
 	await writeFile(
 		configFilename,
 		JSON.stringify({
-			pieces: [{ type: 'custom-kind', fields: { title: 'title', date_consumed: 'date' } }]
+			pieces: { 'custom-kind': { fields: { title: 'title', date_consumed: 'date' } } }
 		})
 	)
 	buildDirectory = path.join(directory, 'build')

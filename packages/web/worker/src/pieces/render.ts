@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
@@ -68,7 +69,7 @@ async function renderOpengraphHtml(
 	config: TemplateConfig,
 	mode: OpengraphMode
 ) {
-	const pieceConfig = config.pieces.find((entry) => entry.type === piece.type)
+	const pieceConfig = getPieceConfig(config.pieces, piece.type)
 	// Resolve rendered image URLs only to the validated paths used to produce them.
 	const pathsByUrl = new Map<string, string>()
 	const helpers = createPieceHelpers(

@@ -28,11 +28,11 @@ function checkFields(fields: FieldMappings, path: string): void {
 
 /** Invalid configuration must fail at startup, not become a per-record fallback. */
 export function validateTemplateSelectors(config: TemplateConfig): void {
-	for (const [index, piece] of config.pieces.entries()) {
+	for (const [type, piece] of Object.entries(config.pieces)) {
 		for (const role of ['icon', 'page', 'opengraph'] as const) {
 			checkFields(
 				piece.templates?.[role].mapping ?? {},
-				`/pieces/${index}/templates/${role}/mapping`
+				`/pieces/${type.replaceAll('~', '~0').replaceAll('/', '~1')}/templates/${role}/mapping`
 			);
 		}
 	}

@@ -15,10 +15,10 @@ vi.mock('#lib/server/config.js', async () => {
 	return {
 		config: makeConfig({
 			content: { ...defaults.content, text: { title: 'luzzle', description: '' } },
-			pieces: [
-				{ type: 'article', fields: { title: 'title', date_consumed: 'date' } },
-				{ type: 'bookmark', fields: { title: 'metadata.title', date_consumed: 'date' } }
-			],
+			pieces: {
+				article: { fields: { title: 'title', date_consumed: 'date' } },
+				bookmark: { fields: { title: 'metadata.title', date_consumed: 'date' } }
+			},
 			ai: { provider: 'google', api_key: 'key' },
 			auth: oidcAuth,
 			sync: { ...defaults.sync, archive: { ...defaults.sync.archive, remote: 'archive-remote' } }

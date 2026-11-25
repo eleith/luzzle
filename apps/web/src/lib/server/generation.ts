@@ -1,3 +1,4 @@
+import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import { error } from '@sveltejs/kit'
 import {
 	generatePieceBody,
@@ -88,7 +89,7 @@ async function loadFieldSchema(file: string): Promise<PieceFrontmatterSchema<Pie
 	const filename = pieces.parseFilename(file)
 	if (filename.format !== '.md' || pieces.isAsset(file)) error(400, 'Choose an archive piece.')
 	const type = filename.type
-	if (!type || !config.pieces.some((entry) => entry.type === type)) {
+	if (!type || !isConfiguredPieceType(type)) {
 		error(400, 'Choose a configured piece type.')
 	}
 	try {

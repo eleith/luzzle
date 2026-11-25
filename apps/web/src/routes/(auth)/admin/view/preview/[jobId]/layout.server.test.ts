@@ -3,6 +3,7 @@ import { getWorkflowRun, getStepAttempts, type WorkflowRunRow } from '@luzzle/we
 import type * as Jobs from '@luzzle/web.jobs'
 import type { AssembledPreview } from '#lib/pieces/preview/assemble.server.js'
 import { templatedPublishedPiece as publishedPiece } from '#lib/pieces/viewer/fixtures/published.js'
+import { config } from '#lib/server/config.js'
 import { db } from '#lib/server/database/index.js'
 import { getWebPiece } from '#lib/server/pieces.js'
 import { load } from './+layout.server.js'
@@ -22,7 +23,7 @@ vi.mock('#lib/server/config.js', async () => {
 	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return {
 		config: makeConfig({
-			pieces: [{ type: 'book', fields: { title: 'title', date_consumed: 'read_on' } }]
+			pieces: { book: { fields: { title: 'title', date_consumed: 'read_on' } } }
 		})
 	}
 })
@@ -125,10 +126,7 @@ test('awaits SDK-backed metadata and preserves completed preview assembly', asyn
 	expect(data).toHaveProperty('outputs', assembled.outputs)
 	expect(data).not.toHaveProperty('html')
 	expect(assembled.outputs).not.toEqual(assembled.piece.assets)
-	expect(assemblePreview).toHaveBeenCalledExactlyOnceWith(
-		preview,
-		expect.objectContaining({ type: 'book' })
-	)
+	expect(assemblePreview).toHaveBeenCalledExactlyOnceWith(preview, config.pieces.book)
 })
 
 test.each(['pending', 'running', 'failed', 'canceled', 'completed'])(

@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { resolve } from 'node:path'
 import {
 	formatPieceDate,
@@ -13,16 +14,13 @@ import type { AppConfig } from '#lib/server/config.js'
 
 const pages = createAuthoredTemplateCaches()
 
-function getAuthoredPageConfig(pieceConfig: AppConfig['pieces'][number] | undefined) {
+function getAuthoredPageConfig(pieceConfig: AppConfig['pieces'][string] | undefined) {
 	const page = pieceConfig?.templates?.page
 	if (page && 'file' in page) return page
 }
 
 export async function preloadAuthoredPages(config: AppConfig) {
-	const seen = new Set<string>()
-	for (const piece of config.pieces) {
-		if (seen.has(piece.type)) continue
-		seen.add(piece.type)
+	for (const piece of Object.values(config.pieces)) {
 		const authoredPage = getAuthoredPageConfig(piece)
 		if (!authoredPage) continue
 		const filename = resolve(authoredPage.file)
@@ -40,7 +38,7 @@ export async function renderAuthoredPage(
 		assetBaseUrl: config.url.luzzle_assets
 	}
 ) {
-	const pieceConfig = config.pieces.find((entry) => entry.type === piece.type)
+	const pieceConfig = getPieceConfig(config.pieces, piece.type)
 	const authoredPage = getAuthoredPageConfig(pieceConfig)
 	// Without an authored page, the caller renders the generic page.
 	if (!authoredPage) return null

@@ -129,7 +129,7 @@ async function buildBlankApp() {
 			)
 	}
 	try {
-		await writeFile(filenames[0], JSON.stringify({ pieces: [] }))
+		await writeFile(filenames[0], JSON.stringify({ pieces: {} }))
 		await writeFile(filenames[1], '')
 		const { stdout, stderr } = await exec('pnpm', ['run', 'build'], {
 			cwd: webRoot,
@@ -510,9 +510,8 @@ beforeAll(async () => {
 				static: path.join(directory, 'owner-static')
 			},
 			content: { text: { title: 'Cutover Garden' } },
-			pieces: [
-				{
-					type: 'cutover-kind',
+			pieces: {
+				'cutover-kind': {
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: {
 						icon: { name: 'default', mapping: { image: 'artwork' } },
@@ -539,7 +538,7 @@ beforeAll(async () => {
 						}
 					}
 				}
-			],
+			},
 			theme: { light: { 'color-primary': '#135790' }, globals: {} }
 		})
 	)
@@ -597,7 +596,7 @@ describe('stock pieces and configured site sections through production HTTP', ()
 				`<script>let { piece, fields } = $props(); if (piece.type === 'unconfigured-kind') throw new Error('Private icon failure');</script><b data-owner-icon>{fields.caption}</b><style>b { color: teal }</style>`
 			)
 			const config = JSON.parse(original.toString('utf8'))
-			config.pieces[0].templates.icon = {
+			config.pieces['cutover-kind'].templates.icon = {
 				file: './owner-icon.svelte',
 				mapping: { image: 'artwork', caption: 'subtitle' }
 			}
@@ -609,10 +608,10 @@ describe('stock pieces and configured site sections through production HTTP', ()
 					if (piece.type === 'unconfigured-kind') throw new Error('Private rendering failure')
 				</script><h1 data-owner-page>{piece.title}</h1>`
 			)
-			config.pieces[0].templates.page.file = './owner-page.svelte'
+			config.pieces['cutover-kind'].templates.page.file = './owner-page.svelte'
 			// Reuse the second seeded record to exercise a per-record template failure.
-			config.pieces.push({ ...config.pieces[0], type: 'unconfigured-kind' })
-			config.pieces.push({ type: 'assets', fields: { title: 'title', date_consumed: 'date' } })
+			config.pieces['unconfigured-kind'] = config.pieces['cutover-kind']
+			config.pieces.assets = { fields: { title: 'title', date_consumed: 'date' } }
 			config.pages = { ...config.pages, home: { latest: false, random: true } }
 			await writeFile(configFilename, JSON.stringify(config))
 			// Editing the config alone must not replace the running page.

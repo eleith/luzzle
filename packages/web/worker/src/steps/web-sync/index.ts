@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import type { LuzzleSelectable } from '@luzzle/core'
 import { completed, type Step } from '../../core/step.js'
 import type { WebPieces } from '../../services/db.js'
@@ -31,7 +32,7 @@ export const webSyncStep: Step<PublicationSource[], PreparedPublication[]> = {
 		}
 		const prepared: PreparedPublication[] = []
 		for (const { item, contentHash } of sources) {
-			const pieceConfig = config.pieces.find((piece) => piece.type === item.type)
+			const pieceConfig = getPieceConfig(config.pieces, item.type)
 			if (!pieceConfig) throw new Error(`Piece type is not configured: ${item.type}`)
 			const previous = publicationByPath.get(item.file_path)
 			if (previous && previous.type !== item.type) {
@@ -109,11 +110,7 @@ export const pruneWebPiecesStep: Step<void, void> = {
 		const live = await db
 			.selectFrom('pieces_items')
 			.select('file_path')
-			.where(
-				'type',
-				'in',
-				config.pieces.map((piece) => piece.type)
-			)
+			.where('type', 'in', Object.keys(config.pieces))
 			.execute()
 		const livePaths = new Set(live.map((piece) => piece.file_path))
 		const publications = await db.selectFrom('web_pieces').select('file_path').execute()

@@ -37,7 +37,7 @@ const {
 			url: { app: 'https://app.example/garden/' },
 			ai: { secret: 'private-ai' },
 			auth: { secret: 'private-auth' },
-			pieces: []
+			pieces: {}
 		}
 	}
 })

@@ -6,17 +6,16 @@ import { configSchema } from '@luzzle/web.templates/config';
 function configure(templates) {
 	return validateConfig(
 		{
-			pieces: [
-				{
-					type: 'arbitrary-records',
+			pieces: {
+				'arbitrary-records': {
 					fields: { title: 'name', date_consumed: 'date' },
 					...(templates === undefined ? {} : { templates })
 				}
-			]
+			}
 		},
 		{},
 		{ schema: configSchema }
-	).pieces[0].templates;
+	).pieces['arbitrary-records'].templates;
 }
 
 test('every unspecified role uses default', () => {
@@ -47,7 +46,7 @@ test('retired names fail at the name field, even when a file is provided', () =>
 		for (const selection of [{ name: 'book' }, { name: 'book', file: './book.svelte' }]) {
 			assert.throws(
 				() => configure({ [role]: selection }),
-				new RegExp(`/pieces/0/templates/${role}/name: .*default`)
+				new RegExp(`/pieces/arbitrary-records/templates/${role}/name: .*default`)
 			);
 		}
 	}

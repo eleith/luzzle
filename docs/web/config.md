@@ -64,7 +64,15 @@ Keep `.env` private. After editing it or changing mounts, run
 
 ## Piece types
 
-Each `pieces` entry maps an archive type's frontmatter into web fields.
+`pieces` is a mapping keyed by archive type. For example, `pieces.books.fields`
+maps frontmatter from `*.books.md` files into web fields.
+
+When upgrading from the old list format, replace each `- type: books` line
+with `books:` (using the actual type name). Keep its `fields` and `templates`
+under that key, with their selectors and order unchanged. The list format is no
+longer accepted. Type keys are literal: if `type` used an environment variable,
+use its resolved archive type as the key. A map does not specify display order.
+
 `title` and `date_consumed` are required. `media` and `attachments` take selector
 lists. `title: title` reads metadata, not literal text. See
 [archives](../archive.md) and [templates](templates.md).

@@ -38,7 +38,7 @@ const makeWebPiece = (): WebPieces => ({
 
 const makeConfig = (): Config =>
 	({
-		pieces: [{ type: 'books', fields: { title: 'title' } }],
+		pieces: { books: { fields: { title: 'title' } } },
 		assets: { salt: 'test-salt' },
 		url: { app: 'http://localhost' },
 	}) as unknown as Config

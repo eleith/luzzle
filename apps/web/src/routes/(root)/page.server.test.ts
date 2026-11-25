@@ -5,7 +5,7 @@ import { load } from './+page.server.js'
 const { config, db, getRecentPieces, getRandomPieces, hydrateWithAssets, loadPageMarkdown } =
 	vi.hoisted(() => ({
 		config: {
-			pieces: [{ type: 'inventory' }],
+			pieces: { inventory: {} },
 			pages: { home: { body: undefined as string | undefined, latest: true, random: false } }
 		},
 		db: {},

@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { GET } from './+server'
 
 const { config, selectFrom, query, hydrateWithAssets, sql } = vi.hoisted(() => ({
-	config: { pieces: [{ type: 'field-notes' }, { type: 'specimens' }] },
+	config: { pieces: { 'field-notes': {}, specimens: {} } },
 	selectFrom: vi.fn(),
 	query: {
 		selectAll: vi.fn().mockReturnThis(),
@@ -32,7 +32,7 @@ beforeEach(() => {
 	hydrateWithAssets.mockImplementation(async (pieces) => pieces)
 })
 
-test.each(config.pieces.map(({ type }) => type))(
+test.each(Object.keys(config.pieces))(
 	'accepts runtime-configured %s with hydration and existing ordering',
 	async (type) => {
 		const response = await GET(event(`?type=${type}`))
@@ -79,7 +79,7 @@ test('page and take retain their existing pagination semantics', async () => {
 })
 
 test('random ordering retains its unpaginated response shape', async () => {
-	const response = await GET(event(`?type=${config.pieces[0].type}&order=random`))
+	const response = await GET(event('?type=field-notes&order=random'))
 	expect(await response.json()).toEqual({ pieces: [{ id: 'note' }] })
 	expect(query.where).toHaveBeenCalledWith(expect.any(Function))
 	expect(query.offset).not.toHaveBeenCalled()

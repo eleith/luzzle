@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import { parse as yamlParse, YAMLParseError } from "yaml";
+import { Type, TypeGuard } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { ConfigSchema } from "./schema.js";
 import type { Static, TSchema } from "@sinclair/typebox";
@@ -27,6 +28,51 @@ export type ConfigPublic = {
 	};
 };
 
+function applyConfigDefaults(schema: BaseConfigSchema, raw: unknown): unknown {
+	const pieces = (raw as Record<string, unknown>).pieces;
+	if (
+		pieces !== undefined &&
+		(pieces === null ||
+			typeof pieces !== "object" ||
+			(Object.getPrototypeOf(pieces) !== Object.prototype &&
+				Object.getPrototypeOf(pieces) !== null))
+	) {
+		throw new ConfigError([
+			{ path: "/pieces", message: "Expected a plain mapping" },
+		]);
+	}
+
+	const input = structuredClone(raw) as Record<string, unknown>;
+	const pieceMap = schema.properties?.pieces;
+	if (!TypeGuard.IsRecord(pieceMap)) return Value.Default(schema, input);
+
+	// TypeBox 0.34 clones/merges record defaults by assignment (losing __proto__)
+	// and skips nested defaults when the entry schema has no default itself.
+	// Let it default the rest of the config, then handle this record by own key.
+	const defaulted = Value.Default(
+		{ ...schema, properties: { ...schema.properties, pieces: Type.Any() } },
+		input,
+	) as Record<string, unknown>;
+	const defaults =
+		typeof pieceMap.default === "function"
+			? pieceMap.default()
+			: pieceMap.default;
+	if (defaults !== undefined || defaulted.pieces !== undefined) {
+		const entries = {
+			...structuredClone(defaults),
+			...(defaulted.pieces as Record<string, unknown>),
+		};
+		const [entrySchema] = Object.values(pieceMap.patternProperties);
+		defaulted.pieces = Object.fromEntries(
+			Object.entries(entries).map(([key, value]) => [
+				key,
+				Value.Default(entrySchema, value),
+			]),
+		);
+	}
+	return defaulted;
+}
+
 export function validateConfig(raw: unknown, env?: NodeJS.ProcessEnv): Config;
 export function validateConfig<Schema extends BaseConfigSchema>(
 	raw: unknown,
@@ -46,11 +92,12 @@ export function validateConfig(
 		throw new ConfigError(configIssues(Value.Errors(inputSchema, raw)));
 	}
 
-	const defaulted = Value.Default(schema, structuredClone(raw));
-	const config = interpolate(defaulted, env);
+	const config = interpolate(applyConfigDefaults(schema, raw), env);
 	if (!Value.Check(schema, config)) {
 		throw new ConfigError(configIssues(Value.Errors(schema, config)));
 	}
+	// Direct lookups of unconfigured piece names must not find inherited keys.
+	Object.setPrototypeOf(config.pieces, null);
 	return config;
 }
 
@@ -68,7 +115,7 @@ function loadConfig(
 	if (userConfigPath !== undefined) {
 		const source = readFileSync(userConfigPath, "utf8");
 		try {
-			raw = yamlParse(source) ?? {};
+			raw = yamlParse(source, { stringKeys: true }) ?? {};
 		} catch (error) {
 			if (!(error instanceof YAMLParseError)) throw error;
 			const { line, col: column } = error.linePos![0];
@@ -100,13 +147,30 @@ function loadConfig(
 function getConfigValue(obj: Config, path: string): unknown {
 	return path.split(".").reduce(
 		(acc, key) => {
-			if (acc && typeof acc === "object" && key in acc) {
+			if (acc && typeof acc === "object" && Object.hasOwn(acc, key)) {
 				return acc[key] as Record<string, unknown>;
 			}
 			return undefined;
 		},
 		obj as unknown as undefined | Record<string, unknown>,
 	);
+}
+
+function setOwnValue(
+	obj: Record<string, unknown>,
+	key: string,
+	value: unknown,
+): void {
+	if (Object.hasOwn(obj, key)) {
+		obj[key] = value;
+	} else {
+		Object.defineProperty(obj, key, {
+			value,
+			enumerable: true,
+			writable: true,
+			configurable: true,
+		});
+	}
 }
 
 function setConfigValue(obj: Config, path: string, value: unknown): void {
@@ -118,12 +182,16 @@ function setConfigValue(obj: Config, path: string, value: unknown): void {
 	>;
 
 	for (const key of keys) {
-		if (typeof current[key] !== "object" || current[key] === null) {
-			current[key] = {};
+		if (
+			!Object.hasOwn(current, key) ||
+			typeof current[key] !== "object" ||
+			current[key] === null
+		) {
+			setOwnValue(current, key, {});
 		}
 		current = current[key] as Record<string, unknown>;
 	}
-	current[lastKey] = value;
+	setOwnValue(current, lastKey, value);
 }
 
 export { loadConfig, getConfigValue, setConfigValue, type Config };

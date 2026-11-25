@@ -14,7 +14,7 @@ vi.mock('#lib/server/config.js', async () => {
 	const { makeConfig } = await import('#lib/server/config.fixture.js')
 	return {
 		config: makeConfig({
-			pieces: [{ type: 'book', fields: { title: 'title', date_consumed: 'read_on' } }]
+			pieces: { book: { fields: { title: 'title', date_consumed: 'read_on' } } }
 		})
 	}
 })

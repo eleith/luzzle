@@ -21,7 +21,7 @@ beforeEach(async () => {
 		db,
 		config: {
 			assets: { salt: 'test' },
-			pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date_read' } }],
+			pieces: { books: { fields: { title: 'title', date_consumed: 'date_read' } } },
 		} as Config,
 		logger: {
 			debug: vi.fn(),

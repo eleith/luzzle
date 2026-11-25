@@ -29,16 +29,15 @@ const makeWebPiece = (json_metadata: string): WebPieces => ({
 
 const makeConfig = (attachments?: string[]): Config =>
 	({
-		pieces: [
-			{
-				type: 'books',
+		pieces: {
+			books: {
 				fields: {
 					title: 'title',
 					date_consumed: 'date_consumed',
 					...(attachments ? { attachments } : {})
 				}
 			}
-		],
+		},
 		assets: { salt: 'test-salt' }
 	}) as unknown as Config
 

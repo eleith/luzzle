@@ -10,13 +10,12 @@ vi.mock('#lib/server/config.js', async () => {
 	return {
 		config: {
 			url: { app: 'https://app.example', luzzle_assets: 'https://cdn.example' },
-			pieces: [
-				{ type: 'missing', templates: { icon: { file: `${file}.missing` } } },
-				{
-					type: 'invalid',
+			pieces: {
+				missing: { templates: { icon: { file: `${file}.missing` } } },
+				invalid: {
 					templates: { icon: { file, mapping: { images: { each: 'jacket', fields: {} } } } }
 				}
-			]
+			}
 		}
 	}
 })

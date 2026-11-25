@@ -51,7 +51,7 @@ const publicationSourcesStep: Step<string[], PublicationSource[]> = {
 				throw new Error('Invalid piece filename')
 			}
 			const { type, format } = pieces.parseFilename(filePath)
-			if (!type || format !== '.md' || !config.pieces.some((piece) => piece.type === type)) {
+			if (!type || format !== '.md' || !Object.hasOwn(config.pieces, type)) {
 				throw new Error('Expected a configured Markdown piece')
 			}
 			const source = (await storage.readFile(filePath, 'text')) as string

@@ -22,13 +22,12 @@ test('a stateful page cannot leak draft data or job assets into a public render'
 	const config = validateConfig(
 		{
 			url: { app: 'https://app.example', luzzle_assets: 'https://cdn.example' },
-			pieces: [
-				{
-					type: 'books',
+			pieces: {
+				books: {
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: { page: { file: relative(process.cwd(), file) } }
 				}
-			]
+			}
 		},
 		{},
 		{ schema: configSchema }

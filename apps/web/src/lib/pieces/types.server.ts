@@ -1,9 +1,9 @@
 import { config } from '#lib/server/config.js'
 
 export function getConfiguredPieceTypes(): string[] {
-	return [...new Set(config.pieces.map((piece) => piece.type))]
+	return Object.keys(config.pieces)
 }
 
 export function isConfiguredPieceType(type: string): boolean {
-	return config.pieces.some((piece) => piece.type === type)
+	return Object.hasOwn(config.pieces, type)
 }

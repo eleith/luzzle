@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import {
 	type Pieces,
 	type PieceFrontmatter,
@@ -71,7 +72,7 @@ export const previewParseStep: Step<PreviewParseInput, ParsedPreview> = {
 		const slug = parts.slug || filePath
 		const pieceKey = generateAssetKey(filePath, config.assets.salt)
 
-		const pieceConfig = config.pieces.find((p) => p.type === parts.type)
+		const pieceConfig = getPieceConfig(config.pieces, parts.type)
 		const fields = pieceConfig
 			? resolveFromFrontmatter(frontmatter, pieceConfig)
 			: { title: '', summary: undefined, dateConsumed: undefined, keywords: [] }

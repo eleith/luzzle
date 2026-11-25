@@ -56,12 +56,11 @@ describe('preview attachment production', () => {
 					storage: { root: directory },
 					paths: { assets: path.join(directory, 'generated', 'pieces') },
 					assets: { salt: 'preview-test' },
-					pieces: [
-						{
-							type: 'snippets',
+					pieces: {
+						snippets: {
 							fields: { title: 'title', date_consumed: 'date', attachments: ['files[*].file'] },
 						},
-					],
+					},
 				},
 				{}
 			),
@@ -196,7 +195,7 @@ describe('preview attachment production', () => {
 		const metadata = JSON.parse(parsed.webPiece.json_metadata)
 		metadata.files = [{ file: imageKey }, metadata.files[0]]
 		parsed.webPiece.json_metadata = JSON.stringify(metadata)
-		ctx.config.pieces[0].fields.highlight = ['files[*].file']
+		ctx.config.pieces.snippets.fields.highlight = ['files[*].file']
 		getTransforms().set('highlight', { run: highlight })
 
 		const result = await workflow({

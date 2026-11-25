@@ -7,7 +7,7 @@ import { getOpenWorkflow, getOpenWorkflowBackend } from '#lib/server/workflow/in
 import { withPublishAdmission } from '#lib/server/workflow/publish.js'
 import { GET } from './+server.js'
 
-vi.mock('#lib/server/config.js', () => ({ config: { pieces: [{ type: 'books' }] } }))
+vi.mock('#lib/server/config.js', () => ({ config: { pieces: { books: {} } } }))
 vi.mock('#lib/server/pieces.js', () => ({
 	getPieces: () => ({ parseFilename: Pieces.prototype.parseFilename })
 }))

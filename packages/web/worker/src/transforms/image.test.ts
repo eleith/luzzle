@@ -38,16 +38,15 @@ const makeWebPiece = (json_metadata: string): WebPieces => ({
 
 const makeConfig = (media?: string[]): Config =>
 	({
-		pieces: [
-			{
-				type: 'books',
+		pieces: {
+			books: {
 				fields: {
 					title: 'title',
 					date_consumed: 'date_consumed',
 					...(media ? { media } : {}),
 				},
 			},
-		],
+		},
 		assets: { salt: 'test-salt' },
 	}) as unknown as Config
 

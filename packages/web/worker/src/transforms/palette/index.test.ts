@@ -16,7 +16,7 @@ const webPiece = {
 } as WebPieces
 const assetMap = new Map([['cover-key', 'assets/cover.jpg']])
 const config = (media = ['poster', 'cover']) =>
-	({ pieces: [{ type: 'books', fields: { media } }] }) as unknown as Config
+	({ pieces: { books: { fields: { media } } } }) as unknown as Config
 const pieces = (buffer = Buffer.from('image')) =>
 	({ getPieceAsset: vi.fn().mockResolvedValue(buffer) }) as unknown as Pieces
 

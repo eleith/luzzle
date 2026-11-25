@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import path from 'node:path'
 import { getFrontmatterValues } from '@luzzle/core'
 import { codeToHtml } from 'shiki'
@@ -41,7 +42,7 @@ export async function run(input: TransformInput): Promise<AssetRecord[]> {
 
 function selectHighlightAttachments(input: TransformInput): HighlightAttachment[] {
 	const { webPiece, config, outDir, assetKeyToPath, priorAssets = [] } = input
-	const selectors = config.pieces.find((piece) => piece.type === webPiece.type)?.fields.highlight
+	const selectors = getPieceConfig(config.pieces, webPiece.type)?.fields.highlight
 	if (!selectors?.length) return []
 
 	const frontmatter = JSON.parse(webPiece.json_metadata)

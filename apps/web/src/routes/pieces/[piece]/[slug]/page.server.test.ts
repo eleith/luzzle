@@ -10,7 +10,7 @@ const event = { params: { piece: 'records', slug: 'album' } } as Parameters<type
 const renderedPage = { html: '<h1>Album</h1>', css: '' }
 const mapped = { ...detail.piece, templates: { page: { fields: { image: 'cover-key' } } } }
 const { config, renderAuthoredPage, withPieceTemplates } = vi.hoisted(() => ({
-	config: { pieces: [] },
+	config: { pieces: {} },
 	renderAuthoredPage: vi.fn(),
 	withPieceTemplates: vi.fn()
 }))

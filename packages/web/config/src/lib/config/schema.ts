@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { Static } from "@sinclair/typebox";
+import type { Static, TSchema } from "@sinclair/typebox";
 
 const NetworkSchema = Type.Object(
 	{
@@ -451,67 +451,66 @@ const ContentSchema = Type.Object(
 	{ default: {}, additionalProperties: false },
 );
 
-const PiecesSchema = Type.Array(
-	Type.Object(
-		{
-			type: Type.String({
-				description: "Archive piece type associated with this presentation.",
-				examples: ["books"],
-			}),
-			fields: Type.Object(
-				{
-					media: Type.Optional(
-						Type.Array(Type.String(), {
-							description: "Frontmatter selectors for media assets.",
-							examples: [["cover"]],
-						}),
-					),
-					title: Type.String({
-						description:
-							"Frontmatter selector for the title, not a literal display title.",
-						examples: ["title"],
-					}),
-					summary: Type.Optional(
-						Type.String({
-							description: "Frontmatter selector for a summary.",
-							examples: ["description"],
-						}),
-					),
-					date_consumed: Type.String({
-						description:
-							"Frontmatter selector for the consumed/read/viewed date.",
-						examples: ["date_read"],
-					}),
-					tags: Type.Optional(
-						Type.String({
-							description: "Frontmatter selector for tags.",
-							examples: ["keywords"],
-						}),
-					),
-					attachments: Type.Optional(
-						Type.Array(Type.String(), {
-							description: "Frontmatter selectors for attachments.",
-							examples: [["files[*].file"]],
-						}),
-					),
-					highlight: Type.Optional(
-						Type.Array(Type.String(), {
-							description:
-								"Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
-							examples: [["files[*].file"]],
-						}),
-					),
-				},
-				{ additionalProperties: false },
-			),
-		},
-		{ additionalProperties: false },
-	),
-	{
-		default: [],
+/** All string keys are valid archive type names, including empty and multiline names. */
+export function createPiecesSchema<T extends TSchema>(value: T) {
+	return Type.Record(Type.String({ pattern: "^[\\s\\S]*$" }), value, {
+		default: {},
+		additionalProperties: false,
 		description:
-			"Ordered presentation and frontmatter mappings for archive piece types.",
+			"Presentation and frontmatter mappings keyed by archive piece type.",
+	});
+}
+
+export const PieceConfigSchema = Type.Object(
+	{
+		fields: Type.Object(
+			{
+				media: Type.Optional(
+					Type.Array(Type.String(), {
+						description: "Frontmatter selectors for media assets.",
+						examples: [["cover"]],
+					}),
+				),
+				title: Type.String({
+					description:
+						"Frontmatter selector for the title, not a literal display title.",
+					examples: ["title"],
+				}),
+				summary: Type.Optional(
+					Type.String({
+						description: "Frontmatter selector for a summary.",
+						examples: ["description"],
+					}),
+				),
+				date_consumed: Type.String({
+					description:
+						"Frontmatter selector for the consumed/read/viewed date.",
+					examples: ["date_read"],
+				}),
+				tags: Type.Optional(
+					Type.String({
+						description: "Frontmatter selector for tags.",
+						examples: ["keywords"],
+					}),
+				),
+				attachments: Type.Optional(
+					Type.Array(Type.String(), {
+						description: "Frontmatter selectors for attachments.",
+						examples: [["files[*].file"]],
+					}),
+				),
+				highlight: Type.Optional(
+					Type.Array(Type.String(), {
+						description:
+							"Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
+						examples: [["files[*].file"]],
+					}),
+				),
+			},
+			{ additionalProperties: false },
+		),
 	},
+	{ additionalProperties: false },
 );
 
 const codeThemeNames = [
@@ -815,7 +814,7 @@ export const ConfigSchema = Type.Object(
 		assets: AssetsSchema,
 		content: ContentSchema,
 		pages: PagesSchema,
-		pieces: PiecesSchema,
+		pieces: createPiecesSchema(PieceConfigSchema),
 		theme: ThemeSchema,
 	},
 	{ title: "Luzzle web configuration", additionalProperties: false },

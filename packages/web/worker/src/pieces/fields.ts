@@ -1,7 +1,7 @@
 import { getFrontmatterValue, getFrontmatterValues, type PieceFrontmatter } from '@luzzle/core'
 import type { Config } from '@luzzle/web.config'
 
-type PieceConfig = Config['pieces'][number]
+type PieceConfig = Config['pieces'][string]
 
 export function resolveFromFrontmatter(
 	frontmatter: PieceFrontmatter,

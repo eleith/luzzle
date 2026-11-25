@@ -528,94 +528,89 @@
       }
     },
     "pieces": {
-      "default": [],
-      "description": "Ordered presentation and frontmatter mappings for archive piece types.",
-      "type": "array",
-      "items": {
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "type",
-          "fields"
-        ],
-        "properties": {
-          "type": {
-            "description": "Archive piece type associated with this presentation.",
-            "examples": [
-              "books"
-            ],
-            "type": "string"
-          },
-          "fields": {
-            "additionalProperties": false,
-            "type": "object",
-            "required": [
-              "title",
-              "date_consumed"
-            ],
-            "properties": {
-              "media": {
-                "description": "Frontmatter selectors for media assets.",
-                "examples": [
-                  [
-                    "cover"
-                  ]
-                ],
-                "type": "array",
-                "items": {
+      "default": {},
+      "additionalProperties": false,
+      "description": "Presentation and frontmatter mappings keyed by archive piece type.",
+      "type": "object",
+      "patternProperties": {
+        "^[\\s\\S]*$": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "fields"
+          ],
+          "properties": {
+            "fields": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "title",
+                "date_consumed"
+              ],
+              "properties": {
+                "media": {
+                  "description": "Frontmatter selectors for media assets.",
+                  "examples": [
+                    [
+                      "cover"
+                    ]
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "title": {
+                  "description": "Frontmatter selector for the title, not a literal display title.",
+                  "examples": [
+                    "title"
+                  ],
                   "type": "string"
-                }
-              },
-              "title": {
-                "description": "Frontmatter selector for the title, not a literal display title.",
-                "examples": [
-                  "title"
-                ],
-                "type": "string"
-              },
-              "summary": {
-                "description": "Frontmatter selector for a summary.",
-                "examples": [
-                  "description"
-                ],
-                "type": "string"
-              },
-              "date_consumed": {
-                "description": "Frontmatter selector for the consumed/read/viewed date.",
-                "examples": [
-                  "date_read"
-                ],
-                "type": "string"
-              },
-              "tags": {
-                "description": "Frontmatter selector for tags.",
-                "examples": [
-                  "keywords"
-                ],
-                "type": "string"
-              },
-              "attachments": {
-                "description": "Frontmatter selectors for attachments.",
-                "examples": [
-                  [
-                    "files[*].file"
-                  ]
-                ],
-                "type": "array",
-                "items": {
+                },
+                "summary": {
+                  "description": "Frontmatter selector for a summary.",
+                  "examples": [
+                    "description"
+                  ],
                   "type": "string"
-                }
-              },
-              "highlight": {
-                "description": "Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
-                "examples": [
-                  [
-                    "files[*].file"
-                  ]
-                ],
-                "type": "array",
-                "items": {
+                },
+                "date_consumed": {
+                  "description": "Frontmatter selector for the consumed/read/viewed date.",
+                  "examples": [
+                    "date_read"
+                  ],
                   "type": "string"
+                },
+                "tags": {
+                  "description": "Frontmatter selector for tags.",
+                  "examples": [
+                    "keywords"
+                  ],
+                  "type": "string"
+                },
+                "attachments": {
+                  "description": "Frontmatter selectors for attachments.",
+                  "examples": [
+                    [
+                      "files[*].file"
+                    ]
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "highlight": {
+                  "description": "Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
+                  "examples": [
+                    [
+                      "files[*].file"
+                    ]
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }

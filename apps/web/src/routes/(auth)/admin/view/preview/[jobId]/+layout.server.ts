@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { error } from '@sveltejs/kit'
 import { getWebPiece } from '#lib/server/pieces.js'
 import { config } from '#lib/server/config.js'
@@ -95,7 +96,7 @@ export const load: LayoutServerLoad = async ({ locals, params }) => {
 		}
 
 		const result = JSON.parse(run.output) as PreviewWorkerResult
-		const pieceConfig = config.pieces.find((p) => p.type === result.type)
+		const pieceConfig = getPieceConfig(config.pieces, result.type)
 		if (!pieceConfig) {
 			return error(500, `Unknown piece type: ${result.type}`)
 		}

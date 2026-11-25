@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { mkdir, writeFile } from 'fs/promises'
 import { getFrontmatterValues } from '@luzzle/core'
 import mime from 'mime-types'
@@ -11,7 +12,7 @@ export async function run({
 	pieces,
 	assetKeyToPath
 }: TransformInput): Promise<AssetRecord[]> {
-	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
+	const pieceConfig = getPieceConfig(config.pieces, webPiece.type)
 	if (!pieceConfig?.fields.attachments) return []
 
 	const frontmatter = JSON.parse(webPiece.json_metadata)

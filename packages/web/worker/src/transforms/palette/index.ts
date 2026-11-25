@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { getFrontmatterValues } from '@luzzle/core'
 import { extractSwatches } from './extract.js'
 import { createPalette } from './palette.js'
@@ -9,7 +10,7 @@ export async function run({
 	pieces,
 	assetKeyToPath,
 }: TransformInput): Promise<AssetRecord[]> {
-	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
+	const pieceConfig = getPieceConfig(config.pieces, webPiece.type)
 	if (!pieceConfig?.fields.media?.length) return []
 
 	const frontmatter = JSON.parse(webPiece.json_metadata)

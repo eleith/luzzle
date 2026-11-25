@@ -12,7 +12,7 @@ import { POST } from './+server.js'
 
 const { runWorkflow } = vi.hoisted(() => ({ runWorkflow: vi.fn() }))
 vi.mock('#lib/pieces/publication.server.js', () => ({ getPiecePublicationState: vi.fn() }))
-vi.mock('#lib/server/config.js', () => ({ config: { pieces: [{ type: 'books' }] } }))
+vi.mock('#lib/server/config.js', () => ({ config: { pieces: { books: {} } } }))
 vi.mock('#lib/server/pieces.js', () => ({
 	getPieces: () => ({ parseFilename: Pieces.prototype.parseFilename })
 }))

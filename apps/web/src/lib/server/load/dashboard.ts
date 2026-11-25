@@ -1,3 +1,5 @@
+import { getConfiguredPieceTypes } from '#lib/pieces/types.server.js'
+import { getPieceConfig } from '@luzzle/web.config'
 import { db } from '#lib/server/database/index.js'
 import { config } from '#lib/server/config.js'
 import { getPieceStats, getAssetStats, type PieceStats } from '../dashboardStats.js'
@@ -32,11 +34,11 @@ export interface DashboardView {
 }
 
 async function loadRecentlyEditedPieces(): Promise<DashboardView['recentlyEditedPieces']> {
-	const types = config.pieces.map((piece) => piece.type)
+	const types = getConfiguredPieceTypes()
 	const sources = await getRecentlyEditedPieces(db, 5, types)
 
 	return sources.map(({ frontmatter_json, publishedHash, publishedAt, ...piece }) => {
-		const { fields } = config.pieces.find((configured) => configured.type === piece.type)!
+		const { fields } = getPieceConfig(config.pieces, piece.type)!
 		const title = getFrontmatterValue<string>(JSON.parse(frontmatter_json), fields.title)
 		return {
 			...piece,
@@ -73,7 +75,7 @@ export async function loadDashboardPage(): Promise<DashboardView> {
 		recentlyEditedPieces,
 		lastPublish,
 		setup: {
-			pieceTypeCount: config.pieces.length,
+			pieceTypeCount: getConfiguredPieceTypes().length,
 			aiConfigured: Boolean(config.ai),
 			authType: config.auth ? ('credentials' in config.auth ? 'local' : 'oidc') : null,
 			archiveSyncConfigured: Boolean(config.sync.archive?.remote),

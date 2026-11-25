@@ -54,8 +54,8 @@ export function buildHealthConfigSummary(config: AppConfig): HealthConfigSummary
 	const oidc = auth && 'oidc' in auth ? auth.oidc : undefined
 	return {
 		storageRoot: config.storage.root,
-		pieceTypes: config.pieces.map((piece) => ({
-			type: piece.type,
+		pieceTypes: Object.entries(config.pieces).map(([type, piece]) => ({
+			type,
 			fields: configuredEntries(piece.fields),
 			templates: (['icon', 'page', 'opengraph'] as const).map((role) => ({
 				name: role,

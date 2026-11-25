@@ -1,3 +1,5 @@
+import { getConfiguredPieceTypes } from '#lib/pieces/types.server.js'
+import { getPieceConfig } from '@luzzle/web.config'
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { getPieces } from '#lib/server/pieces.js'
@@ -7,7 +9,7 @@ import { setFrontmatterValue } from '@luzzle/core'
 export const load: PageServerLoad = async ({ params, url }) => {
 	const typeParam = url.searchParams.get('type')
 	const directory = params.directory || ''
-	const types = config.pieces.map((x) => x.type)
+	const types = getConfiguredPieceTypes()
 	const type = typeParam && types.includes(typeParam) ? typeParam : types[0]
 
 	const pieces = getPieces()
@@ -48,7 +50,7 @@ export const actions = {
 				return fail(400, { ...submitted, error: { message: 'piece type does not exist' } })
 			}
 
-			const titleField = config.pieces.find((p) => p.type === type)?.fields.title
+			const titleField = getPieceConfig(config.pieces, type)?.fields.title
 			if (!name.trim() || !titleField) {
 				return fail(400, {
 					...submitted,

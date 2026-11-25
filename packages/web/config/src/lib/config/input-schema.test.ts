@@ -33,20 +33,19 @@ describe("configuration input schema", () => {
 		expect(inputImages.required).toBeUndefined();
 	});
 
-	test("keeps required fields inside piece arrays", () => {
+	test("keeps required fields inside piece records", () => {
 		expect(
 			Value.Check(InputSchema, {
-				pieces: [{ type: "books", fields: { title: "title" } }],
+				pieces: { books: { fields: { title: "title" } } },
 			}),
 		).toBe(false);
 		expect(
 			Value.Check(InputSchema, {
-				pieces: [
-					{
-						type: "books",
+				pieces: {
+					books: {
 						fields: { title: "title", date_consumed: "date_read" },
 					},
-				],
+				},
 			}),
 		).toBe(true);
 	});

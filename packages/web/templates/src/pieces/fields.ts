@@ -10,7 +10,7 @@ import {
 	type Fields as OpengraphFields
 } from '../opengraphs/default/schema.js';
 
-type PieceConfig = TemplateConfig['pieces'][number];
+type PieceConfig = TemplateConfig['pieces'][string];
 type Role = 'icon' | 'page' | 'opengraph';
 
 export interface TemplateData<Fields> {

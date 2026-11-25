@@ -110,12 +110,11 @@ describe('registered publication workflow', () => {
 					assets: path.join(directory, 'assets'),
 				},
 				assets: { salt: 'publish-test' },
-				pieces: [
-					{
-						type: 'books',
+				pieces: {
+					books: {
 						fields: { title: 'title', date_consumed: 'date_consumed', tags: 'tags' },
 					},
-				],
+				},
 			},
 			{}
 		)

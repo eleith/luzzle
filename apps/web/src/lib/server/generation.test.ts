@@ -16,7 +16,7 @@ const fixture = vi.hoisted(() => {
 		ai,
 		config: {
 			ai: ai as Config['ai'],
-			pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }]
+			pieces: { books: { fields: { title: 'title', date_consumed: 'date' } } } as Config['pieces']
 		},
 		provider: {
 			client: vi.fn(),
@@ -74,7 +74,7 @@ const source =
 beforeEach(() => {
 	vi.clearAllMocks()
 	fixture.config.ai = fixture.ai
-	fixture.config.pieces = [{ type: 'books', fields: { title: 'title', date_consumed: 'date' } }]
+	fixture.config.pieces = { books: { fields: { title: 'title', date_consumed: 'date' } } }
 	Object.assign(DEFAULT_GENERATION_LIMITS, {
 		maxFiles: 2,
 		maxFileBytes: 50,
@@ -481,7 +481,7 @@ test('metadata uses the configured schema without requiring a persisted piece', 
 })
 
 test('body generation needs neither a file identity nor an archive schema', async () => {
-	fixture.config.pieces = []
+	fixture.config.pieces = {}
 	fixture.storage.readFile.mockRejectedValue(new Error('Archive unavailable'))
 	const data = form()
 	data.delete('file')

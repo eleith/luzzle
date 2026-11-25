@@ -528,1487 +528,1482 @@
       }
     },
     "pieces": {
-      "default": [],
-      "description": "Ordered presentation and frontmatter mappings for archive piece types.",
-      "type": "array",
-      "items": {
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "type",
-          "fields"
-        ],
-        "properties": {
-          "type": {
-            "description": "Archive piece type associated with this presentation.",
-            "examples": [
-              "books"
-            ],
-            "type": "string"
-          },
-          "fields": {
-            "additionalProperties": false,
-            "type": "object",
-            "required": [
-              "title",
-              "date_consumed"
-            ],
-            "properties": {
-              "media": {
-                "description": "Frontmatter selectors for media assets.",
-                "examples": [
-                  [
-                    "cover"
-                  ]
-                ],
-                "type": "array",
-                "items": {
+      "default": {},
+      "additionalProperties": false,
+      "description": "Presentation and frontmatter mappings keyed by archive piece type.",
+      "type": "object",
+      "patternProperties": {
+        "^[\\s\\S]*$": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "fields"
+          ],
+          "properties": {
+            "fields": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "title",
+                "date_consumed"
+              ],
+              "properties": {
+                "media": {
+                  "description": "Frontmatter selectors for media assets.",
+                  "examples": [
+                    [
+                      "cover"
+                    ]
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "title": {
+                  "description": "Frontmatter selector for the title, not a literal display title.",
+                  "examples": [
+                    "title"
+                  ],
                   "type": "string"
-                }
-              },
-              "title": {
-                "description": "Frontmatter selector for the title, not a literal display title.",
-                "examples": [
-                  "title"
-                ],
-                "type": "string"
-              },
-              "summary": {
-                "description": "Frontmatter selector for a summary.",
-                "examples": [
-                  "description"
-                ],
-                "type": "string"
-              },
-              "date_consumed": {
-                "description": "Frontmatter selector for the consumed/read/viewed date.",
-                "examples": [
-                  "date_read"
-                ],
-                "type": "string"
-              },
-              "tags": {
-                "description": "Frontmatter selector for tags.",
-                "examples": [
-                  "keywords"
-                ],
-                "type": "string"
-              },
-              "attachments": {
-                "description": "Frontmatter selectors for attachments.",
-                "examples": [
-                  [
-                    "files[*].file"
-                  ]
-                ],
-                "type": "array",
-                "items": {
+                },
+                "summary": {
+                  "description": "Frontmatter selector for a summary.",
+                  "examples": [
+                    "description"
+                  ],
                   "type": "string"
-                }
-              },
-              "highlight": {
-                "description": "Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
-                "examples": [
-                  [
-                    "files[*].file"
-                  ]
-                ],
-                "type": "array",
-                "items": {
+                },
+                "date_consumed": {
+                  "description": "Frontmatter selector for the consumed/read/viewed date.",
+                  "examples": [
+                    "date_read"
+                  ],
                   "type": "string"
+                },
+                "tags": {
+                  "description": "Frontmatter selector for tags.",
+                  "examples": [
+                    "keywords"
+                  ],
+                  "type": "string"
+                },
+                "attachments": {
+                  "description": "Frontmatter selectors for attachments.",
+                  "examples": [
+                    [
+                      "files[*].file"
+                    ]
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "highlight": {
+                  "description": "Frontmatter selectors for published attachments to highlight as code or text. Omit to disable attachment highlighting.",
+                  "examples": [
+                    [
+                      "files[*].file"
+                    ]
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
-            }
-          },
-          "templates": {
-            "default": {},
-            "additionalProperties": false,
-            "type": "object",
-            "properties": {
-              "icon": {
-                "default": {
-                  "name": "default"
-                },
-                "anyOf": [
-                  {
-                    "additionalProperties": false,
-                    "description": "The default piece icon: a poster image with a title fallback.",
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "default": "default",
-                        "const": "default",
-                        "type": "string"
-                      },
-                      "mapping": {
-                        "additionalProperties": false,
-                        "type": "object",
-                        "properties": {
-                          "image": {
-                            "$id": "icon-default-image",
-                            "description": "Image asset key displayed as the poster.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "icon-default-image"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "icon-default-image"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    }
+            },
+            "templates": {
+              "default": {},
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "default": {
+                    "name": "default"
                   },
-                  {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "file"
-                    ],
-                    "properties": {
-                      "file": {
-                        "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
-                        "description": "Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.",
-                        "type": "string"
-                      },
-                      "name": {
-                        "default": "default",
-                        "const": "default",
-                        "type": "string"
-                      },
-                      "mapping": {
-                        "type": "object",
-                        "patternProperties": {
-                          "^(.*)$": {
-                            "$id": "icon-external-field",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "icon-external-field"
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "description": "The default piece icon: a poster image with a title fallback.",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "default": "default",
+                          "const": "default",
+                          "type": "string"
+                        },
+                        "mapping": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "image": {
+                              "$id": "icon-default-image",
+                              "description": "Image asset key displayed as the poster.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "icon-default-image"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "icon-default-image"
+                                        }
                                       }
                                     }
                                   }
                                 }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "icon-external-field"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "file"
+                      ],
+                      "properties": {
+                        "file": {
+                          "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+                          "description": "Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.",
+                          "type": "string"
+                        },
+                        "name": {
+                          "default": "default",
+                          "const": "default",
+                          "type": "string"
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "patternProperties": {
+                            "^(.*)$": {
+                              "$id": "icon-external-field",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "icon-external-field"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "icon-external-field"
+                                        }
                                       }
                                     }
                                   }
                                 }
-                              }
-                            ]
+                              ]
+                            }
                           }
                         }
                       }
                     }
-                  }
-                ]
-              },
-              "page": {
-                "default": {
-                  "name": "default"
+                  ]
                 },
-                "anyOf": [
-                  {
-                    "additionalProperties": false,
-                    "description": "An independent poster-style default piece page.",
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "default": "default",
-                        "const": "default",
-                        "type": "string"
-                      },
-                      "mapping": {
-                        "additionalProperties": false,
-                        "type": "object",
-                        "properties": {
-                          "image": {
-                            "$id": "page-default-image",
-                            "description": "Poster image asset key.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-image"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-image"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "backdrop": {
-                            "$id": "page-default-backdrop",
-                            "description": "Backdrop image asset key.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-backdrop"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-backdrop"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "dateReleased": {
-                            "$id": "page-default-dateReleased",
-                            "description": "Release date as text or epoch milliseconds.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-dateReleased"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-dateReleased"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "runtime": {
-                            "$id": "page-default-runtime",
-                            "description": "Duration in minutes.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-runtime"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-runtime"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "url": {
-                            "$id": "page-default-url",
-                            "description": "External link.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-url"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-url"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "isbn": {
-                            "$id": "page-default-isbn",
-                            "description": "ISBN used for an Open Library link when no URL is supplied.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-isbn"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-isbn"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "category": {
-                            "$id": "page-default-category",
-                            "description": "Display category, independent of the archive piece type.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-category"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-category"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "people": {
-                            "$id": "page-default-people",
-                            "description": "People as names or mapped objects with a name field.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-people"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-default-people"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    }
+                "page": {
+                  "default": {
+                    "name": "default"
                   },
-                  {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "file"
-                    ],
-                    "properties": {
-                      "file": {
-                        "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
-                        "description": "Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.",
-                        "type": "string"
-                      },
-                      "name": {
-                        "default": "default",
-                        "const": "default",
-                        "type": "string"
-                      },
-                      "mapping": {
-                        "type": "object",
-                        "patternProperties": {
-                          "^(.*)$": {
-                            "$id": "page-external-field",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-external-field"
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "description": "An independent poster-style default piece page.",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "default": "default",
+                          "const": "default",
+                          "type": "string"
+                        },
+                        "mapping": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "image": {
+                              "$id": "page-default-image",
+                              "description": "Poster image asset key.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-image"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-image"
+                                        }
                                       }
                                     }
                                   }
                                 }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "page-external-field"
+                              ]
+                            },
+                            "backdrop": {
+                              "$id": "page-default-backdrop",
+                              "description": "Backdrop image asset key.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-backdrop"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-backdrop"
+                                        }
                                       }
                                     }
                                   }
                                 }
-                              }
-                            ]
+                              ]
+                            },
+                            "dateReleased": {
+                              "$id": "page-default-dateReleased",
+                              "description": "Release date as text or epoch milliseconds.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-dateReleased"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-dateReleased"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "runtime": {
+                              "$id": "page-default-runtime",
+                              "description": "Duration in minutes.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-runtime"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-runtime"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "url": {
+                              "$id": "page-default-url",
+                              "description": "External link.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-url"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-url"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "isbn": {
+                              "$id": "page-default-isbn",
+                              "description": "ISBN used for an Open Library link when no URL is supplied.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-isbn"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-isbn"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "category": {
+                              "$id": "page-default-category",
+                              "description": "Display category, independent of the archive piece type.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-category"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-category"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "people": {
+                              "$id": "page-default-people",
+                              "description": "People as names or mapped objects with a name field.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-people"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-default-people"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "file"
+                      ],
+                      "properties": {
+                        "file": {
+                          "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+                          "description": "Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.",
+                          "type": "string"
+                        },
+                        "name": {
+                          "default": "default",
+                          "const": "default",
+                          "type": "string"
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "patternProperties": {
+                            "^(.*)$": {
+                              "$id": "page-external-field",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-external-field"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "page-external-field"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
                           }
                         }
                       }
                     }
-                  }
-                ]
-              },
-              "opengraph": {
-                "default": {
-                  "name": "default"
+                  ]
                 },
-                "anyOf": [
-                  {
-                    "additionalProperties": false,
-                    "description": "An independent poster-style default share card.",
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "default": "default",
-                        "const": "default",
-                        "type": "string"
-                      },
-                      "mapping": {
-                        "additionalProperties": false,
-                        "type": "object",
-                        "properties": {
-                          "image": {
-                            "$id": "opengraph-default-image",
-                            "description": "Poster image asset key.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-image"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-image"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "backdrop": {
-                            "$id": "opengraph-default-backdrop",
-                            "description": "Backdrop image asset key.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-backdrop"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-backdrop"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "director": {
-                            "$id": "opengraph-default-director",
-                            "description": "Director text displayed in the byline.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-director"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-director"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "dateReleased": {
-                            "$id": "opengraph-default-dateReleased",
-                            "description": "Release date as text or epoch milliseconds.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-dateReleased"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-dateReleased"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "runtime": {
-                            "$id": "opengraph-default-runtime",
-                            "description": "Duration in minutes.",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-runtime"
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-default-runtime"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    }
+                "opengraph": {
+                  "default": {
+                    "name": "default"
                   },
-                  {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "file"
-                    ],
-                    "properties": {
-                      "file": {
-                        "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
-                        "description": "Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.",
-                        "type": "string"
-                      },
-                      "name": {
-                        "default": "default",
-                        "const": "default",
-                        "type": "string"
-                      },
-                      "mapping": {
-                        "type": "object",
-                        "patternProperties": {
-                          "^(.*)$": {
-                            "$id": "opengraph-external-field",
-                            "anyOf": [
-                              {
-                                "minLength": 1,
-                                "type": "string"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "field"
-                                ],
-                                "properties": {
-                                  "field": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "default": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "value"
-                                ],
-                                "properties": {
-                                  "value": {}
-                                }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-external-field"
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "description": "An independent poster-style default share card.",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "default": "default",
+                          "const": "default",
+                          "type": "string"
+                        },
+                        "mapping": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "image": {
+                              "$id": "opengraph-default-image",
+                              "description": "Poster image asset key.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-image"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-image"
+                                        }
                                       }
                                     }
                                   }
                                 }
-                              },
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "each",
-                                  "fields"
-                                ],
-                                "properties": {
-                                  "each": {
-                                    "minLength": 1,
-                                    "type": "string"
-                                  },
-                                  "fields": {
-                                    "type": "object",
-                                    "patternProperties": {
-                                      "^(.*)$": {
-                                        "$ref": "opengraph-external-field"
+                              ]
+                            },
+                            "backdrop": {
+                              "$id": "opengraph-default-backdrop",
+                              "description": "Backdrop image asset key.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-backdrop"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-backdrop"
+                                        }
                                       }
                                     }
                                   }
                                 }
-                              }
-                            ]
+                              ]
+                            },
+                            "director": {
+                              "$id": "opengraph-default-director",
+                              "description": "Director text displayed in the byline.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-director"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-director"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "dateReleased": {
+                              "$id": "opengraph-default-dateReleased",
+                              "description": "Release date as text or epoch milliseconds.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-dateReleased"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-dateReleased"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "runtime": {
+                              "$id": "opengraph-default-runtime",
+                              "description": "Duration in minutes.",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-runtime"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-default-runtime"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "file"
+                      ],
+                      "properties": {
+                        "file": {
+                          "pattern": "(?:^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\\\\\x00\\r\\n]+\\.svelte$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+                          "description": "Trusted local Svelte file, relative to the working directory of each service that renders it (/app in production Docker), not the mounted config directory.",
+                          "type": "string"
+                        },
+                        "name": {
+                          "default": "default",
+                          "const": "default",
+                          "type": "string"
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "patternProperties": {
+                            "^(.*)$": {
+                              "$id": "opengraph-external-field",
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "field"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "default": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "value": {}
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-external-field"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "each",
+                                    "fields"
+                                  ],
+                                  "properties": {
+                                    "each": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "fields": {
+                                      "type": "object",
+                                      "patternProperties": {
+                                        "^(.*)$": {
+                                          "$ref": "opengraph-external-field"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
                           }
                         }
                       }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             }
           }

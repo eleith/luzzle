@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { GET } from './+server'
 
 const { config, selectFrom, query } = vi.hoisted(() => ({
-	config: { pieces: [{ type: 'field-notes' }, { type: 'specimens' }] },
+	config: { pieces: { 'field-notes': {}, specimens: {} } },
 	selectFrom: vi.fn(),
 	query: {
 		select: vi.fn().mockReturnThis(),
@@ -23,7 +23,7 @@ beforeEach(() => {
 	query.executeTakeFirst.mockResolvedValue({ file_path: 'notes/observation.field-notes.md' })
 })
 
-test.each(config.pieces.map(({ type }) => type))(
+test.each(Object.keys(config.pieces))(
 	'configured %s opens the existing source editor URL',
 	async (type) => {
 		await expect(GET(event(type))).rejects.toMatchObject({
@@ -45,7 +45,7 @@ test('unknown types fail before looking up a persisted piece', async () => {
 
 test('missing pieces of a known type retain their 404 response', async () => {
 	query.executeTakeFirst.mockResolvedValue(undefined)
-	const response = await GET(event(config.pieces[0].type))
+	const response = await GET(event('field-notes'))
 	expect(response.status).toBe(404)
 	expect(await response.text()).toBe('piece not found')
 })

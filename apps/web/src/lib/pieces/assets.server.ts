@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { db } from '#lib/server/database/index.js'
 import type { WebPieces, WebPiecesAsset } from '@luzzle/web.db'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
@@ -47,10 +48,7 @@ export async function hydratePublicPiece(piece: WebPieces): Promise<PublicWebPie
 }
 
 export function withPieceTemplates(piece: PublicWebPiece): TemplatedPiece {
-	return mapPieceTemplates(
-		piece,
-		config.pieces.find((entry) => entry.type === piece.type)
-	)
+	return mapPieceTemplates(piece, getPieceConfig(config.pieces, piece.type))
 }
 
 export async function hydrateWithAssets(piece: WebPieces): Promise<TemplatedPiece>

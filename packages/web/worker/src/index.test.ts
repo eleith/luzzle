@@ -129,13 +129,12 @@ test('production refuses to start with an unreadable authored share design', asy
 	const config = validateConfig(
 		{
 			paths: { config: path.join(dir, 'config.yaml'), database: path.join(dir, 'app.sqlite') },
-			pieces: [
-				{
-					type: 'books',
+			pieces: {
+				books: {
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: { opengraph: { file: 'missing/card.svelte' } },
 				},
-			],
+			},
 		},
 		{},
 		{ schema: configSchema }

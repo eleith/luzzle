@@ -4,6 +4,7 @@ import {
 	loadConfig,
 	validateConfig,
 	getConfigValue,
+	getPieceConfig,
 	setConfigValue,
 	ConfigError,
 	siteImageDefaults,
@@ -18,6 +19,19 @@ describe("index (package entry point)", () => {
 		expect(typeof getConfigValue).toBe("function");
 		expect(typeof setConfigValue).toBe("function");
 		expectTypeOf(validateConfig).returns.toEqualTypeOf<Config>();
+	});
+
+	test("piece names are arbitrary own keys, never inherited properties", () => {
+		const names = ["__proto__", "constructor", "", "multi\nline", "some/~type"];
+		const entry = { fields: { title: "title", date_consumed: "date" } };
+		const pieces = Object.fromEntries(names.map((name) => [name, entry]));
+		const config = validateConfig({ pieces });
+		for (const name of names) {
+			expect(Object.hasOwn(config.pieces, name)).toBe(true);
+			expect(getPieceConfig(config.pieces, name)).toEqual(entry);
+		}
+		expect(config.pieces["toString"]).toBeUndefined();
+		expect(getPieceConfig({}, "constructor")).toBeUndefined();
 	});
 
 	test("exports the schema's built-in site image sources", () => {

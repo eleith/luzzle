@@ -12,13 +12,12 @@ function configured(selection: { file: string } | { name: 'default' }) {
 	return validateConfig(
 		{
 			url: { app: 'https://app.example', luzzle_assets: 'https://cdn.example' },
-			pieces: [
-				{
-					type: 'books',
+			pieces: {
+				books: {
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: { opengraph: selection }
 				}
-			]
+			}
 		},
 		{},
 		{ schema: configSchema }

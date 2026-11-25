@@ -128,6 +128,8 @@ describe("loadConfig", () => {
 
 	test.each([
 		["url: [", "BAD_INDENT", 1, 7],
+		["pieces:\n  book: {}\n  book: {}\n", "DUPLICATE_KEY", 3, 3],
+		['pieces:\n  1: {}\n  "1": {}\n', "DUPLICATE_KEY", 3, 3],
 		["url:\n  app: one\n  app: two\n", "DUPLICATE_KEY", 3, 3],
 		['url:\n  app: "synthetic-value\\q"\n', "BAD_DQ_ESCAPE", 2, 24],
 	])(
@@ -156,6 +158,16 @@ describe("loadConfig", () => {
 			expect(error.message).not.toContain("synthetic-value");
 			expect(JSON.stringify(error)).not.toContain("synthetic-value");
 			expect(error).not.toHaveProperty("cause");
+		},
+	);
+
+	test.each(["!!omap [book: {}]", "!!set {book}"])(
+		"rejects a tagged YAML collection as a pieces mapping: %s",
+		(collection) => {
+			writeFileSync(filename, `pieces: ${collection}\n`);
+			expect(() => loadConfig(filename)).toThrow(
+				/\/pieces: Expected a plain mapping/,
+			);
 		},
 	);
 
@@ -194,11 +206,11 @@ worker:
   queue:
     path: '/custom/sidequest.db'
 pieces:
-  - type: book
+  book:
     fields:
       title: title
       date_consumed: date_read
-  - type: video
+  video:
     fields:
       title: title
       date_consumed: date_watched
@@ -227,9 +239,8 @@ pieces:
 			},
 		});
 		expect(config.worker.queue.path).toBe("/custom/sidequest.db");
-		expect(config.pieces).toHaveLength(2);
-		expect(config.pieces[0].type).toBe("book");
-		expect(config.pieces[1].fields.media).toEqual(["image"]);
+		expect(Object.keys(config.pieces).sort()).toEqual(["book", "video"]);
+		expect(config.pieces.video.fields.media).toEqual(["image"]);
 		expect(config.paths.config).toBe(filename);
 	});
 
@@ -266,7 +277,7 @@ ai:
   api_key: '\${CONFIG_TEST_AI_KEY}'
   model: '\${CONFIG_TEST_AI_MODEL}'
 pieces:
-  - type: book
+  book:
     fields:
       title: '\${CONFIG_TEST_TITLE}'
       date_consumed: date_read
@@ -280,8 +291,8 @@ pieces:
 			api_key: "google-key",
 			model: "operator-model",
 		});
-		expect(config.pieces[0].fields.title).toBe("title: # remains a string");
-		expect(config.pieces[0].fields.media).toEqual(["cover"]);
+		expect(config.pieces.book.fields.title).toBe("title: # remains a string");
+		expect(config.pieces.book.fields.media).toEqual(["cover"]);
 	});
 
 	test("reports unresolved references from files with their field paths", () => {
@@ -336,7 +347,7 @@ describe("validateConfig", () => {
 			cdn: { remote: "", path: "", flags: [], strategy: "sync" },
 		});
 		expect(config.worker.queue.path).toBe("./data/sidequest.sqlite");
-		expect(config.pieces).toEqual([]);
+		expect(config.pieces).toEqual({});
 		expect(config.theme.light["color-primary"]).toBe("#0d6efd");
 		expect(config.theme.dark["color-primary"]).toBe("#3b82f6");
 		expect(config.theme.globals["font-size-root"]).toBe(22);
@@ -395,16 +406,15 @@ describe("validateConfig", () => {
 		config.sync.archive.flags.push("--verbose");
 		config.theme.light["color-primary"] = "blue";
 		config.theme.dark["color-primary"] = "green";
-		config.pieces.push({
-			type: "book",
+		config.pieces.book = {
 			fields: { title: "title", date_consumed: "date" },
-		});
+		};
 		expect(raw).toEqual(original);
 		const next = validateConfig(raw, env);
 		expect(next.sync.archive.flags).toEqual(["--fast-list"]);
 		expect(next.theme.light["color-primary"]).toBe("red");
 		expect(next.theme.dark["color-primary"]).toBe("#3b82f6");
-		expect(next.pieces).toEqual([]);
+		expect(next.pieces).toEqual({});
 	});
 
 	test("does not mutate input when resolved validation fails", () => {
@@ -543,7 +553,15 @@ describe("validateConfig", () => {
 		["nested sync array", { sync: { archive: [] } }],
 		["nested theme array", { theme: { light: [] } }],
 		["provider array", { auth: { secret: "s", credentials: [] } }],
-		["piece fields array", { pieces: [{ type: "book", fields: [] }] }],
+		[
+			"legacy piece array",
+			{
+				pieces: [
+					{ type: "book", fields: { title: "title", date_consumed: "date" } },
+				],
+			},
+		],
+		["piece fields array", { pieces: { book: { fields: [] } } }],
 	])(
 		"rejects %s before defaulting can turn it into an object",
 		(_label, raw) => {
@@ -562,16 +580,23 @@ describe("validateConfig", () => {
 			{ theme: { markdown: { code: { light: "not-a-theme" } } } },
 		],
 		[
-			"missing piece type",
-			{ pieces: [{ fields: { title: "title", date_consumed: "date" } }] },
+			"piece value repeats type",
+			{
+				pieces: {
+					book: {
+						type: "book",
+						fields: { title: "title", date_consumed: "date" },
+					},
+				},
+			},
 		],
 		[
 			"missing piece title",
-			{ pieces: [{ type: "book", fields: { date_consumed: "date" } }] },
+			{ pieces: { book: { fields: { date_consumed: "date" } } } },
 		],
 		[
 			"missing piece date",
-			{ pieces: [{ type: "book", fields: { title: "title" } }] },
+			{ pieces: { book: { fields: { title: "title" } } } },
 		],
 		["invalid array item", { sync: { archive: { flags: [42] } } }],
 	])("rejects %s", (_label, raw) => {
@@ -599,12 +624,11 @@ describe("validateConfig", () => {
 					secret: "${SECRET}",
 					credentials: { username: "${USER}", password: "${PASSWORD}" },
 				},
-				pieces: [
-					{
-						type: "book",
+				pieces: {
+					book: {
 						fields: { title: "${TITLE}", date_consumed: "date" },
 					},
-				],
+				},
 			},
 			{ SECRET: "sensitive-value" },
 		);
@@ -619,7 +643,7 @@ describe("validateConfig", () => {
 					message: 'Environment variable "PASSWORD" is missing.',
 				},
 				{
-					path: "/pieces/0/fields/title",
+					path: "/pieces/book/fields/title",
 					message: 'Environment variable "TITLE" is missing.',
 				},
 			]),
@@ -764,6 +788,16 @@ describe("config path helpers", () => {
 			} as unknown as TestConfig;
 			setConfigValue(config, "a.b.c", "new-value");
 			expect(config.a.b.c).toBe("new-value");
+		});
+
+		test("updates writable nonconfigurable properties at leaf and intermediate paths", () => {
+			const config = {} as TestConfig;
+			Object.defineProperty(config, "a", { value: null, writable: true });
+
+			setConfigValue(config, "a", "first");
+			expect(config.a).toBe("first");
+			setConfigValue(config, "a.b.c", "nested");
+			expect(config.a.b.c).toBe("nested");
 		});
 
 		test("should create intermediate objects if they don't exist", () => {

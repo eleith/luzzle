@@ -13,9 +13,8 @@ const { selectFrom, query } = vi.hoisted(() => {
 })
 vi.mock('#lib/server/config.js', () => ({
 	config: {
-		pieces: [
-			{
-				type: 'books',
+		pieces: {
+			books: {
 				templates: {
 					icon: { name: 'default', mapping: { image: 'art.cover' } },
 					page: {
@@ -25,7 +24,7 @@ vi.mock('#lib/server/config.js', () => ({
 					opengraph: { name: 'default', mapping: { image: 'art.share' } }
 				}
 			}
-		]
+		}
 	}
 }))
 vi.mock('#lib/server/database/index.js', () => ({ db: { selectFrom } }))

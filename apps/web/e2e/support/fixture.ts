@@ -175,9 +175,8 @@ export async function createFixture(directory: string, origin: string) {
 			worker: { queue: { path: path.join(directory, 'data/openworkflow.sqlite') } },
 			content: { text: { title: 'E2E Garden' } },
 			auth: { secret: 'e2e-only-session-secret-at-least-32-characters', credentials: ADMIN },
-			pieces: [
-				{
-					type: 'notes',
+			pieces: {
+				notes: {
 					fields: { title: 'title', date_consumed: 'date', tags: 'tags' },
 					templates: {
 						page: {
@@ -191,8 +190,7 @@ export async function createFixture(directory: string, origin: string) {
 						}
 					}
 				},
-				{
-					type: fieldGuide.type,
+				[fieldGuide.type]: {
 					fields: { title: 'title', date_consumed: 'date' },
 					templates: {
 						page: {
@@ -206,7 +204,7 @@ export async function createFixture(directory: string, origin: string) {
 						}
 					}
 				}
-			]
+			}
 		})
 	)
 	const db = createAppDb(database)

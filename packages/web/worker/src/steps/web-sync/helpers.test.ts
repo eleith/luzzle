@@ -94,14 +94,13 @@ describe('buildWebPiece', () => {
 	} as unknown as LuzzleSelectable<'pieces_items'>
 
 	const pieceConfig = {
-		type: 'books',
 		fields: {
 			title: 'title',
 			date_consumed: 'date_consumed',
 			summary: 'summary',
 			tags: 'tags',
 		},
-	} as unknown as Config['pieces'][number]
+	} as unknown as Config['pieces'][string]
 
 	test('maps item + frontmatter into WebPieces row', () => {
 		const fm = { title: 'Great Book', date_consumed: 1700000500, summary: 'summary text', tags: ['fiction'] }
@@ -140,9 +139,8 @@ describe('buildWebPiece', () => {
 
 	test('omits summary lookup when piece config has no summary field', () => {
 		const cfgNoSummary = {
-			type: 'books',
 			fields: { title: 'title', date_consumed: 'date_consumed' },
-		} as unknown as Config['pieces'][number]
+		} as unknown as Config['pieces'][string]
 		const result = buildWebPiece(item, cfgNoSummary, 's', 'salt', { title: 't', summary: 'ignored' })
 		expect(result.summary).toBeUndefined()
 	})

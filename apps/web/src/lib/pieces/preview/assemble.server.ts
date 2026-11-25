@@ -65,7 +65,7 @@ function imagePassthroughs(
 
 export function assemblePreview(
 	result: PreviewWorkerResult,
-	pieceConfig: Config['pieces'][number]
+	pieceConfig: Config['pieces'][string]
 ): AssembledPreview {
 	const fm = result.sanitizedFrontmatter
 	const keyToPath = new Map<string, string>()

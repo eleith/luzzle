@@ -15,7 +15,7 @@ function makeCtx(): WorkerContext {
 	return {
 		config: {
 			assets: { salt: 'test-salt' },
-			pieces: [{ type: 'books', fields: { title: 'title', date_consumed: 'date_read', summary: 'description', tags: 'keywords' } }]
+			pieces: { books: { fields: { title: 'title', date_consumed: 'date_read', summary: 'description', tags: 'keywords' } } }
 		} as unknown as Config,
 		logger: {
 			debug: vi.fn(),

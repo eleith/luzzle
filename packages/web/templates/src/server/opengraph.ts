@@ -16,10 +16,7 @@ export async function preloadAuthoredOpengraphFiles(
 	caches: { published: TemplateCache; preview: TemplateCache },
 	pieces: TemplateConfig['pieces']
 ) {
-	const seen = new Set<string>();
-	for (const piece of pieces) {
-		if (seen.has(piece.type)) continue;
-		seen.add(piece.type);
+	for (const piece of Object.values(pieces)) {
 		const selection = piece.templates?.opengraph;
 		if (!selection || !('file' in selection)) continue;
 		const filename = resolve(selection.file);

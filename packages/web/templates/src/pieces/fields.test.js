@@ -21,7 +21,6 @@ function piece() {
 }
 
 const config = {
-	type: 'clippings',
 	fields: { title: 'headline', date_consumed: 'read' },
 	templates: {
 		icon: { name: 'default', mapping: { image: 'art.thumbnail' } },

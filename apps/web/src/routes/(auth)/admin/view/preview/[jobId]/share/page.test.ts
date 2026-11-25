@@ -29,7 +29,7 @@ const { page, resolve } = vi.hoisted(() => ({
 			.replace('[jobId]', () => params.jobId ?? '')
 	})
 }))
-vi.mock('#lib/server/config.js', () => ({ config: { pieces: [] } }))
+vi.mock('#lib/server/config.js', () => ({ config: { pieces: {} } }))
 vi.mock('$app/state', () => ({ page }))
 vi.mock('$app/forms', () => ({ enhance: vi.fn() }))
 vi.mock('$app/paths', () => ({ resolve }))

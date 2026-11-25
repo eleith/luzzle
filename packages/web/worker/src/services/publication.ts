@@ -23,7 +23,7 @@ export async function getPendingPublication(
 	}
 	const livePaths = new Set<string>()
 
-	for (const pieceConfig of config.pieces) {
+	for (const type of Object.keys(config.pieces)) {
 		const items = await db
 			.selectFrom('pieces_items')
 			.leftJoin('pieces_cache', 'pieces_cache.file_path', 'pieces_items.file_path')
@@ -34,7 +34,7 @@ export async function getPendingPublication(
 				'web_pieces.content_hash as publishedHash',
 				'web_pieces.id as publishedId',
 			])
-			.where('pieces_items.type', '=', pieceConfig.type)
+			.where('pieces_items.type', '=', type)
 			.orderBy('pieces_items.file_path')
 			.execute()
 

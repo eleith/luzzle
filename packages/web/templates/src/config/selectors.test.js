@@ -15,13 +15,12 @@ function withConfig(templates, run) {
 		writeFileSync(
 			filename,
 			JSON.stringify({
-				pieces: [
-					{
-						type: 'records',
+				pieces: {
+					'records/~': {
 						fields: { title: 'title', date_consumed: 'date' },
 						templates
 					}
-				]
+				}
 			})
 		);
 		return run(filename);
@@ -42,7 +41,7 @@ test('loading rejects malformed selectors before any piece is hydrated', () => {
 				() => loadConfig(filename),
 				(error) => {
 					assert.ok(error instanceof ConfigError);
-					assert.match(error.issues[0].path, /^\/pieces\/0\/templates\/page\/mapping\//);
+					assert.match(error.issues[0].path, /^\/pieces\/records~1~0\/templates\/page\/mapping\//);
 					return true;
 				}
 			);
@@ -62,7 +61,10 @@ test('valid nested selectors and literal text use their distinct meanings', () =
 			}
 		},
 		(filename) => {
-			assert.equal(loadConfig(filename).pieces[0].templates.page.mapping.category.value, '[');
+			assert.equal(
+				loadConfig(filename).pieces['records/~'].templates.page.mapping.category.value,
+				'['
+			);
 		}
 	);
 });

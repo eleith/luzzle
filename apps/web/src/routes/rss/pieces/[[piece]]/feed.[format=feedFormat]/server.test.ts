@@ -11,7 +11,7 @@ vi.mock('#lib/server/config.js', async () => {
 	return {
 		config: {
 			...base,
-			pieces: [{ type: 'field-notes' }, { type: 'specimens' }],
+			pieces: { 'field-notes': {}, specimens: {} },
 			content: {
 				...base.content,
 				text: { title: 'Garden', description: 'Field observations' }
@@ -37,7 +37,7 @@ beforeEach(() => {
 	getPiecesForFeed.mockResolvedValue([
 		{
 			id: 'note',
-			type: config.pieces[0].type,
+			type: 'field-notes',
 			slug: 'observation',
 			title: 'Observation',
 			note: 'A field note',
@@ -53,7 +53,7 @@ const formats = [
 ] as const
 
 test.each(formats)('%s feeds accept every runtime-configured type', async (format, contentType) => {
-	for (const { type } of config.pieces) {
+	for (const type of Object.keys(config.pieces)) {
 		const response = await GET(event(type, format))
 		expect(response.status).toBe(200)
 		expect(response.headers.get('content-type')).toBe(contentType)

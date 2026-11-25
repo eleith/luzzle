@@ -13,9 +13,8 @@ function makeConfig(): Config {
 	return {
 		paths: { database: 'db.sqlite', config: '/app/config.yaml' },
 		assets: { salt: 'salt' },
-		pieces: [
-			{
-				type: 'books',
+		pieces: {
+			books: {
 				fields: {
 					title: 'title',
 					date_consumed: 'date_consumed',
@@ -23,7 +22,7 @@ function makeConfig(): Config {
 					tags: 'tags',
 				},
 			},
-		],
+		},
 	} as unknown as Config
 }
 
@@ -181,8 +180,8 @@ describe('webSyncStep', () => {
 		})
 	})
 
-	test('rejects supplied source types not in config.pieces', async () => {
-		await seedItem({ id: 'x', type: 'unknown', file_path: 'unknown/x.md' })
+	test.each(['unknown', 'constructor'])('rejects unconfigured source type %s', async (type) => {
+		await seedItem({ id: 'x', type, file_path: 'unknown/x.md' })
 		await expect(syncPaths(['unknown/x.md'])).rejects.toThrow('Piece type is not configured')
 
 		const rows = await db.selectFrom('web_pieces').selectAll().execute()

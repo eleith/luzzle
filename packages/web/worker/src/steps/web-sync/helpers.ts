@@ -42,7 +42,7 @@ export function sanitizeMetadata(jsonMetadata: string, pathToKey: Map<string, st
 
 export function buildWebPiece(
 	item: LuzzleSelectable<'pieces_items'>,
-	pieceConfig: Config['pieces'][number],
+	pieceConfig: Config['pieces'][string],
 	slug: string,
 	salt: string,
 	frontmatter: ReturnType<typeof JSON.parse>,

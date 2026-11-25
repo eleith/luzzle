@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import {
 	preloadAuthoredOpengraphFiles,
 	renderAuthoredOpengraph as renderFileOpengraph
@@ -22,7 +23,7 @@ export async function renderAuthoredOpengraph(
 		assetBaseUrl: config.url.luzzle_assets
 	}
 ) {
-	const design = config.pieces.find((entry) => entry.type === piece.type)?.templates?.opengraph
+	const design = getPieceConfig(config.pieces, piece.type)?.templates?.opengraph
 	if (!design || !('file' in design)) return null
 	try {
 		return await renderFileOpengraph(

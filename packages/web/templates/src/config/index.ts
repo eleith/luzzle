@@ -1,26 +1,25 @@
 import { Type } from '@sinclair/typebox';
 import type { Static } from '@sinclair/typebox';
-import { ConfigSchema, loadConfig as loadBaseConfig } from '@luzzle/web.config';
+import {
+	ConfigSchema,
+	PieceConfigSchema,
+	createPiecesSchema,
+	loadConfig as loadBaseConfig
+} from '@luzzle/web.config';
 import { templateSchema } from './schema.js';
 import { validateTemplateSelectors } from './selectors.js';
-
-const pieces = ConfigSchema.properties.pieces;
 
 export const configSchema = Type.Object(
 	{
 		...ConfigSchema.properties,
-		pieces: Type.Array(
+		pieces: createPiecesSchema(
 			Type.Object(
 				{
-					...pieces.items.properties,
+					...PieceConfigSchema.properties,
 					templates: Type.Optional(templateSchema)
 				},
 				{ additionalProperties: false }
-			),
-			{
-				default: pieces.default,
-				description: pieces.description
-			}
+			)
 		)
 	},
 	{

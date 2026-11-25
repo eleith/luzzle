@@ -24,6 +24,11 @@ const fixtures: { name: string; yaml: string; errors: RegExp[] }[] = [
 	{ name: "minimal defaults, auth and AI omitted", yaml: "{}\n", errors: [] },
 	{ name: "credentials", yaml: auth + credentials, errors: [] },
 	{
+		name: "piece type is the key, not a nested field",
+		yaml: "pieces:\n  books:\n    type: books\n    fields: { title: title, date_consumed: date_read }\n",
+		errors: [/Property type is not allowed/],
+	},
+	{
 		name: "OIDC without defaulted display name",
 		yaml: auth + oidc,
 		errors: [],

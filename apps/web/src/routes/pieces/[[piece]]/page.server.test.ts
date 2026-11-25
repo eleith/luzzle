@@ -4,7 +4,7 @@ import { load } from './+page.server'
 const { config, query, selectFrom, sql, hydrateWithAssets } = vi.hoisted(() => ({
 	config: {
 		url: { app: 'https://app.example' },
-		pieces: [{ type: 'field-notes' }, { type: 'specimens' }]
+		pieces: { 'field-notes': {}, specimens: {} }
 	},
 	query: {
 		selectAll: vi.fn().mockReturnThis(),
@@ -36,7 +36,7 @@ beforeEach(() => {
 	hydrateWithAssets.mockImplementation(async (pieces) => pieces)
 })
 
-test.each(config.pieces.map(({ type }) => type))(
+test.each(Object.keys(config.pieces))(
 	'lists runtime-configured %s with hydration and existing ordering',
 	async (type) => {
 		expect(await load(event(type))).toEqual({
@@ -72,7 +72,7 @@ test('year and page filters retain their existing pagination semantics', async (
 	const pieces = Array.from({ length: 51 }, (_, id) => ({ id }))
 	query.execute.mockResolvedValue(pieces)
 	sql.mockReturnValue('year-expression')
-	expect(await load(event(config.pieces[0].type, '?page=2&year=2025'))).toMatchObject({
+	expect(await load(event('field-notes', '?page=2&year=2025'))).toMatchObject({
 		pieces: pieces.slice(0, 50),
 		nextPage: 3,
 		page: 2,

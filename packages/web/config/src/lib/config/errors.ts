@@ -27,7 +27,7 @@ function selectedObjectBranch({ path, schema, value }: ValueError): number {
 			(branch) => TypeGuard.IsObject(branch) && provider in branch.properties,
 		);
 	}
-	if (/^\/pieces\/\d+\/templates\/(icon|page|opengraph)$/.test(path)) {
+	if (/^\/pieces\/[^/]*\/templates\/(icon|page|opengraph)$/.test(path)) {
 		const hasFile = Object.hasOwn(value, "file");
 		return schema.anyOf.findIndex(
 			(branch) =>

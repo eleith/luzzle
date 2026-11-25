@@ -4,58 +4,88 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { ConfigError } from "./errors.js";
-import { ConfigSchema, siteImageDefaults } from "./schema.js";
+import {
+	ConfigSchema,
+	createPiecesSchema,
+	PieceConfigSchema,
+	siteImageDefaults,
+} from "./schema.js";
 import { loadConfig, validateConfig } from "./config.js";
 
 const schema = Type.Object(
 	{
 		...ConfigSchema.properties,
 		instance: Type.String({ default: "demo" }),
-		pieces: Type.Array(
+		pieces: createPiecesSchema(
 			Type.Object(
 				{
-					...ConfigSchema.properties.pieces.items.properties,
+					...PieceConfigSchema.properties,
 					badge: Type.String({ default: "new" }),
 				},
 				{ additionalProperties: false },
 			),
-			{ default: [] },
 		),
 	},
 	{ additionalProperties: false },
 );
 
 const piece = {
-	type: "records",
 	fields: { title: "name", date_consumed: "date" },
 };
 
 test("consumers can supply complete extended schemas with their own defaults", () => {
-	const config = validateConfig({ pieces: [piece] }, {}, { schema });
-	expect(config.pieces[0].badge).toBe("new");
+	const config = validateConfig({ pieces: { records: piece } }, {}, { schema });
+	expect(config.pieces.records.badge).toBe("new");
+});
+
+test("piece overrides preserve other record defaults, including prototype-named keys", () => {
+	const defaults = {
+		["__proto__"]: piece,
+		book: { ...piece, badge: "default" },
+	};
+	const extended = Type.Object({
+		...schema.properties,
+		pieces: { ...schema.properties.pieces, default: defaults },
+	});
+	const raw = {
+		pieces: { book: { ...piece, badge: "override" }, constructor: piece },
+	};
+	const config = validateConfig(raw, {}, { schema: extended });
+	expect(config.pieces).toEqual({
+		["__proto__"]: { ...piece, badge: "new" },
+		book: { ...piece, badge: "override" },
+		constructor: { ...piece, badge: "new" },
+	});
+	expect(defaults["__proto__"]).not.toHaveProperty("badge");
 });
 
 test("attachment highlighting requires explicit selectors", () => {
 	const fields = { ...piece.fields, attachments: ["files[*].file"] };
-	const config = validateConfig({ pieces: [{ ...piece, fields }] }, {});
-	expect(config.pieces[0].fields.highlight).toBeUndefined();
+	const config = validateConfig(
+		{ pieces: { records: { ...piece, fields } } },
+		{},
+	);
+	expect(config.pieces.records.fields.highlight).toBeUndefined();
 
 	const selected = validateConfig(
 		{
-			pieces: [
-				{ ...piece, fields: { ...fields, highlight: ["files[*].file"] } },
-			],
+			pieces: {
+				records: {
+					...piece,
+					fields: { ...fields, highlight: ["files[*].file"] },
+				},
+			},
 		},
 		{},
 	);
-	expect(selected.pieces[0].fields.highlight).toEqual(["files[*].file"]);
+	expect(selected.pieces.records.fields.highlight).toEqual(["files[*].file"]);
 });
 
 test("loading defaults preserves the supplied schema and base config contract", () => {
 	const config = loadConfig(undefined, { schema });
 	expect(config.instance).toBe("demo");
 	expect(config.paths).toBeDefined();
-	expect(config.pieces).toEqual([]);
+	expect(config.pieces).toEqual({});
 });
 
 test("schema constraints also apply to the recorded configuration filename", () => {
@@ -87,7 +117,7 @@ test("schema constraints also apply to the recorded configuration filename", () 
 test("retired per-piece source components are rejected rather than ignored", () => {
 	expect(() =>
 		validateConfig({
-			pieces: [{ ...piece, components: { icon: "owned.svelte" } }],
+			pieces: { records: { ...piece, components: { icon: "owned.svelte" } } },
 		}),
 	).toThrow(ConfigError);
 });
@@ -162,10 +192,16 @@ test.each([
 });
 
 test("only the supplied schema can authorize and validate an extension", () => {
-	const raw = { pieces: [{ ...piece, badge: "featured" }] };
+	const raw = { pieces: { records: { ...piece, badge: "featured" } } };
 	expect(() => validateConfig(raw)).toThrow();
-	expect(validateConfig(raw, {}, { schema }).pieces[0].badge).toBe("featured");
+	expect(validateConfig(raw, {}, { schema }).pieces.records.badge).toBe(
+		"featured",
+	);
 	expect(() =>
-		validateConfig({ pieces: [{ ...piece, badge: 1 }] }, {}, { schema }),
+		validateConfig(
+			{ pieces: { records: { ...piece, badge: 1 } } },
+			{},
+			{ schema },
+		),
 	).toThrow();
 });

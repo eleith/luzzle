@@ -19,7 +19,7 @@ function makeInput(overrides: Partial<TransformInput> = {}): TransformInput {
 		},
 		config: validateConfig(
 			{
-				pieces: [{ type: 'words', fields: { title: 'title', date_consumed: 'date' } }],
+				pieces: { words: { fields: { title: 'title', date_consumed: 'date' } } },
 			},
 			{}
 		),

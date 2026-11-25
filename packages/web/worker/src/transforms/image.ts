@@ -1,3 +1,4 @@
+import { getPieceConfig } from '@luzzle/web.config'
 import { mkdir, writeFile } from 'fs/promises'
 import { getFrontmatterValues } from '@luzzle/core'
 import { getAssetDir, getAssetPath, getImageAssetPath, ASSET_SIZES } from '../assets/paths.js'
@@ -18,7 +19,7 @@ export async function run({
 	assetKeyToPath,
 	logger,
 }: TransformInput): Promise<AssetRecord[]> {
-	const pieceConfig = config.pieces.find((p) => p.type === webPiece.type)
+	const pieceConfig = getPieceConfig(config.pieces, webPiece.type)
 	if (!pieceConfig) return []
 
 	const mediaFields = pieceConfig.fields.media || []
