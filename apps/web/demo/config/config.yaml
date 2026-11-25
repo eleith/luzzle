@@ -294,11 +294,12 @@ pieces:
   - type: video-games
     templates:
       icon:
+        file: ./content/templates/video-game/icon.svelte
         name: video-game-cartridge
         mapping:
           image: cover
       page:
-        name: video-game
+        file: ./content/templates/video-game/page.svelte
         mapping:
           image: cover
           url: url
@@ -307,7 +308,7 @@ pieces:
           playTimeMinutes: play_time_minutes
           platform: platform
       opengraph:
-        name: video-game-cartridge
+        file: ./content/templates/video-game/opengraph.svelte
         mapping:
           image: cover
           publisher: publisher
