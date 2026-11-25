@@ -27,7 +27,7 @@ use `<url.luzzle_assets or url.app>/assets/pieces/<path>`; private preview files
 and framework JS/CSS stay same-origin. Use Compose service names for internal addresses.
 
 Restart web and worker after config changes; no rebuild is needed.
-[Republish](templates.md#apply-your-choices) to regenerate OG images after OG template
+[Republish](templates.md#applying-edits) to regenerate OG images after OG template
 or font changes. For listing icon or public detail page changes, [clear cached pages](deployment.md#clear-cached-public-pages) instead.
 
 ## Sign-in
@@ -67,11 +67,8 @@ Keep `.env` private. After editing it or changing mounts, run
 `pieces` is a mapping keyed by archive type. For example, `pieces.books.fields`
 maps frontmatter from `*.books.md` files into web fields.
 
-When upgrading from the old list format, replace each `- type: books` line
-with `books:` (using the actual type name). Keep its `fields` and `templates`
-under that key, with their selectors and order unchanged. The list format is no
-longer accepted. Type keys are literal: if `type` used an environment variable,
-use its resolved archive type as the key. A map does not specify display order.
+Type keys are literal archive type names, not environment references. The map
+does not specify display order.
 
 `title` and `date_consumed` are required. `media` and `attachments` take selector
 lists. `title: title` reads metadata, not literal text. See

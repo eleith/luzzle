@@ -14,12 +14,12 @@ New to the files underneath? Start with [archives](../archive.md) or the
 ## Browsing pieces
 
 The homepage, `/pieces`, type and tag listings, and search results render each
-piece's [configured icon](templates.md#use-a-local-icon-on-piece-listings) or
+piece's [configured icon](templates.md) or
 the generic default on the server. Icons and cover images don't require JavaScript.
 
 Tag listings use the same icons and pagination as `/pieces`. Follow **next** or
 **prev** to navigate between pages of up to 50 pieces, with or without JavaScript.
-Each page has its own URL (for example, `/tags/field-notes?page=2`) so it can be bookmarked. Public piece pages use their built-in design or a [configured Svelte page](templates.md#use-a-local-page-on-public-piece-urls); both render without JavaScript.
+Each page has its own URL (for example, `/tags/field-notes?page=2`) so it can be bookmarked. Public piece pages use their built-in design or a [configured Svelte page](templates.md); both render without JavaScript.
 
 ## Using the editor
 

@@ -46,16 +46,8 @@ directly bypasses that preparation. No generated `.env` file is needed.
 
 ## Template changes
 
-**One-time upgrade for existing source checkouts:** If you previously built the
-web app, run `pnpm run clean:template-routes` from `apps/web` **on the old
-revision, before pulling the update**, or start with a fresh checkout. Git can
-leave the old ignored route files in place, and the new revision no longer has
-the cleanup command. Published Docker image users are unaffected.
-
 Public piece pages render the authored file or generic default directly at
-`/pieces/<type>/<slug>`; listings render icons at their normal URLs. There are
-no generated per-design route adapters or template-route build/clean steps.
-Running `pnpm run sync:svelte` synchronizes Kit route types only.
+`/pieces/<type>/<slug>`. See [Piece templates](templates.md) for configuration.
 
 Keep template content tests in the package and application behavior tests in web.
 Do not add template CSS inventories, visual snapshots, or style/layout assertions.
