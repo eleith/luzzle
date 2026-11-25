@@ -37,16 +37,13 @@ async function readFont(config: TemplateConfig): Promise<Buffer | null> {
 	return readFileSync(fontPath)
 }
 
-async function loadStaticAssets(config: TemplateConfig) {
-	const require = createRequire(import.meta.url)
-	const resetCss = readFileSync(require.resolve('@luzzle/web.theme/styles/reset.css'), 'utf8')
-	const baseCss = readFileSync(require.resolve('@luzzle/web.theme/styles/base.css'), 'utf8')
-	const markdownCss = readFileSync(require.resolve('@luzzle/web.theme/styles/markdown.css'), 'utf8')
+const require = createRequire(import.meta.url)
+let packagedStylesheets: string[] | undefined
 
-	return {
-		staticStylesheets: [resetCss, baseCss, markdownCss],
-		fontData: await readFont(config),
-	}
+function getPackagedStylesheets() {
+	return packagedStylesheets ??= ['reset', 'base', 'markdown'].map((name) =>
+		readFileSync(require.resolve(`@luzzle/web.theme/styles/${name}.css`), 'utf8')
+	)
 }
 
 function loadLocalImageResources(assetsDir: string, pathsByUrl: Map<string, string>) {
@@ -112,10 +109,10 @@ export async function renderOpengraphPng(
 	outDir?: string,
 	mode: OpengraphMode = 'published'
 ): Promise<Buffer> {
-	const { staticStylesheets, fontData } = await loadStaticAssets(config)
+	const fontData = await readFont(config)
 	// Share images use fixed canvas typography, not responsive browser sizing.
 	const stylesheets = [
-		...staticStylesheets,
+		...getPackagedStylesheets(),
 		generateThemeCss(config),
 		':root { font-size: calc(var(--font-size-root) * 1px); }',
 	]
