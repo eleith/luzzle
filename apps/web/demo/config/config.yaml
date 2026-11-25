@@ -263,11 +263,12 @@ pieces:
   - type: music
     templates:
       icon:
+        file: ./content/templates/music/icon.svelte
         name: vinyl-record
         mapping:
           image: cover
       page:
-        name: music
+        file: ./content/templates/music/page.svelte
         mapping:
           image: cover
           artist: artist
@@ -278,7 +279,7 @@ pieces:
           collaborators: collaborators
           url: url
       opengraph:
-        name: vinyl-record
+        file: ./content/templates/music/opengraph.svelte
         mapping:
           image: cover
           artist: artist
