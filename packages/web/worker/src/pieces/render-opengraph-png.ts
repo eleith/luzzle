@@ -125,9 +125,10 @@ export async function renderOpengraphPng(
 	const response = new ImageResponse(html, {
 		width: OpengraphImageWidth,
 		height: OpengraphImageHeight,
-		stylesheets,
+		css: stylesheets,
 		fonts: fontData ? [{ name: fontName, data: fontData }] : undefined,
-		fetchedResources,
+		images: { sources: fetchedResources, allowUrl: () => false },
+		emoji: 'from-font',
 		onError: (err: unknown) => {
 			console.error('[takumi] render error:', err)
 		},

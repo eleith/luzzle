@@ -47,7 +47,7 @@
 		"@luzzle/web.pieces": "workspace:*",
 		"@luzzle/web.templates": "workspace:*",
 		"@luzzle/web.theme": "workspace:*",
-		"@takumi-rs/core": "1.5.0",
+		"@takumi-rs/core": "2.22.1",
 		"devlop": "1.1.0",
 		"hastscript": "9.0.1",
 		"kysely": "0.28.17",
@@ -84,7 +84,7 @@
 		"sharp": "0.33.5",
 		"shiki": "3.22.0",
 		"svelte": "5.57.3",
-		"takumi-js": "1.5.0",
+		"takumi-js": "2.22.1",
 		"unified": "11.0.5",
 		"unist-util-visit": "5.0.0"
 	}

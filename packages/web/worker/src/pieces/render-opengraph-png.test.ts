@@ -98,7 +98,7 @@ describe('pieces/render-opengraph-png', () => {
 		expect(vi.mocked(ImageResponse).mock.calls.at(-1)![1]).toEqual(
 			expect.objectContaining({
 				fonts: [{ name: 'Noto Sans', data: fontBytes }],
-				stylesheets: expect.arrayContaining([
+				css: expect.arrayContaining([
 					':root { font-size: calc(var(--font-size-root) * 1px); }',
 				]),
 			})
