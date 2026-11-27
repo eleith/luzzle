@@ -19,7 +19,7 @@ Save [docker-compose.yml](docker-compose.yml) here and
 - Keep `.env` private; optionally pin `LUZZLE_VERSION` instead of `latest`.
 - Services default to UID/GID `1000:1000`; override with `UID`/`GID`.
   Archive, assets, data, rclone state and cache must be writable by those IDs.
-- Put custom [images](config.md#site-images) and [fonts](config.md#local-sans-font)
+- Put custom [images](config.md#site-images) and [fonts](config.md#fonts)
   under `content/`; do not overwrite `build/client` files.
 
 ## Start and publish

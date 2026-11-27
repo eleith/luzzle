@@ -23,12 +23,12 @@ content:
   #   favicon: ./content/images/favicon.png # PNG, SVG, ICO.
   #   opengraph: ./content/images/share.png # PNG, JPEG, WebP, GIF.
   # Files are reread on use; restart web only for config changes.
-  # Optional local sans font: WOFF2 only, readable regular file <=5 MiB.
+  # Optional fonts: override either or both. Each must be a licensed WOFF2 file <=5 MiB.
   # Resolve from /app/config.yaml; the content mount serves both web and worker.
   # fonts:
   #   sans: ./content/fonts/my-font.woff2
-  # Overrides the browser font-sans-url and the worker's paths.static lookup.
-  # Omit to retain the bundled/default font-sans-url behavior.
+  #   mono: ./content/fonts/my-code-font.woff2
+  # Omit to use the bundled Noto Sans and Noto Sans Mono.
   # Reread on use; restart web + worker only for config changes. Republish for new OGs.
 
 # Pair a local font with its actual family and supported weight range.
@@ -36,8 +36,9 @@ content:
 #   globals:
 #     font-sans-name: '"My Font"'
 #     font-sans-weight: 300 900
-# No font-sans-url needed: content.fonts.sans uses /assets/fonts/my-font.woff2.
-# See config.md#local-sans-font for licensing, caching and failure behavior.
+#     font-mono-name: '"My Code Font"'
+#     font-mono-weight: "400"
+# No font URL is needed when a local file is selected. See config.md#fonts.
 
 # Match this type and these frontmatter selectors to your own archive.
 # For example: hello.notes.md, with title and date_published in its frontmatter.

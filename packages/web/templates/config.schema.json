@@ -377,7 +377,13 @@
             "sans": {
               "minLength": 1,
               "pattern": "(?:^(?!\\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)(?!.*[\\u0000-\\u001f\\u007f-\\u009f?#]).*[^/]\\.(?:[wW][oO][fF][fF]2)$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
-              "description": "Local sans font filename (WOFF2), absolute or relative to the supplied config file. Supports explicit environment references. Omit to retain theme.globals.font-sans-url.",
+              "description": "Local sans font filename (WOFF2), absolute or relative to the supplied config file. Different files must have distinct basenames. Supports explicit environment references. Omit to retain theme.globals.font-sans-url.",
+              "type": "string"
+            },
+            "mono": {
+              "minLength": 1,
+              "pattern": "(?:^(?!\\s*(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//))(?!.*://)(?!.*[\\u0000-\\u001f\\u007f-\\u009f?#]).*[^/]\\.(?:[wW][oO][fF][fF]2)$)|\\$\\{[^}:]+(?::-[^}]*)?\\}",
+              "description": "Local mono font filename (WOFF2), absolute or relative to the supplied config file. Different files must have distinct basenames. Supports explicit environment references. Omit to retain theme.globals.font-mono-url.",
               "type": "string"
             }
           }
@@ -2291,8 +2297,18 @@
               "type": "string"
             },
             "font-mono-name": {
-              "default": "\"monaco, monospace\"",
+              "default": "\"Noto Sans Mono\"",
               "description": "CSS font-family value for monospace text.",
+              "type": "string"
+            },
+            "font-mono-url": {
+              "default": "\"/fonts/noto-sans-mono.woff2\"",
+              "description": "CSS-quoted font URL.",
+              "type": "string"
+            },
+            "font-mono-weight": {
+              "default": "400",
+              "description": "Font-face weight or variable font weight range.",
               "type": "string"
             },
             "font-sans-name": {
@@ -2306,7 +2322,7 @@
               "type": "string"
             },
             "font-sans-weight": {
-              "default": "300 600",
+              "default": "100 900",
               "description": "Font-face weight or variable font weight range.",
               "type": "string"
             },

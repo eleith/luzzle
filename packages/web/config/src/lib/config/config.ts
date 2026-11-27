@@ -7,6 +7,7 @@ import type { Static, TSchema } from "@sinclair/typebox";
 import type { Config } from "./schema.js";
 import { createInputSchema } from "./input-schema.js";
 import { ConfigError, configIssues } from "./errors.js";
+import { configuredAssetFilename, configuredAssetUrl } from "../../asset-urls.js";
 import { interpolate } from "./interpolate.js";
 
 // Compare validated values, not TypeBox's exact schema/required-tuple representation.
@@ -95,6 +96,20 @@ export function validateConfig(
 	const config = interpolate(applyConfigDefaults(schema, raw), env);
 	if (!Value.Check(schema, config)) {
 		throw new ConfigError(configIssues(Value.Errors(schema, config)));
+	}
+	const { sans, mono } = config.content.fonts;
+	if (
+		sans &&
+		mono &&
+		sans !== mono &&
+		configuredAssetFilename(sans) === configuredAssetFilename(mono)
+	) {
+		throw new ConfigError([
+			{
+				path: "/content/fonts/mono",
+				message: `Both font files would be served at ${configuredAssetUrl("fonts", mono)}. Use different filenames or select the same file for both roles.`,
+			},
+		]);
 	}
 	// Direct lookups of unconfigured piece names must not find inherited keys.
 	Object.setPrototypeOf(config.pieces, null);

@@ -11,17 +11,18 @@ const imageResponse = createSiteImageHandler(config)
 
 export const GET: RequestHandler = ({ params, request }) => {
 	const { kind, filename } = params
-	if (kind === 'fonts') {
-		const source = config.content.fonts.sans
-		if (!source || configuredAssetFilename(source) !== filename)
-			return siteAssetNotFound(request.method)
-		return fontResponse(request)
+	switch (kind) {
+		case 'fonts':
+			return fontResponse(filename, request)
+		case 'favicon':
+		case 'opengraph': {
+			const source = config.content.images[kind]
+			if (source !== siteImageDefaults[kind] && configuredAssetFilename(source) === filename) {
+				return imageResponse(kind, request)
+			}
+		}
 	}
-	if (kind !== 'favicon' && kind !== 'opengraph') return siteAssetNotFound(request.method)
-	const source = config.content.images[kind]
-	if (source === siteImageDefaults[kind] || configuredAssetFilename(source) !== filename)
-		return siteAssetNotFound(request.method)
-	return imageResponse(kind, request)
+	return siteAssetNotFound(request.method)
 }
 
 export const HEAD = GET

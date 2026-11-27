@@ -6,7 +6,7 @@ const { config, readConfiguredAsset } = vi.hoisted(() => ({
 	config: {
 		content: {
 			images: { favicon: '', opengraph: '' },
-			fonts: {} as { sans?: string }
+			fonts: {} as { sans?: string; mono?: string }
 		},
 		paths: { config: '/private/config.yaml' }
 	},
@@ -26,7 +26,10 @@ beforeEach(() => {
 		favicon: '/private/icons/shared.png',
 		opengraph: '/private/cards/shared.png'
 	}
-	config.content.fonts = { sans: '/private/fonts/site font %é.woff2' }
+	config.content.fonts = {
+		sans: '/private/fonts/site font %é.woff2',
+		mono: '/private/code/font.WOFF2'
+	}
 	readConfiguredAsset.mockResolvedValue(new TextEncoder().encode('selected bytes'))
 })
 
@@ -45,6 +48,7 @@ async function request(kind: string, filename: string, method = 'GET') {
 test.each([
 	['favicon', 'shared.png', '/private/icons/shared.png', 'image/png'],
 	['opengraph', 'shared.png', '/private/cards/shared.png', 'image/png'],
+	['fonts', 'font.WOFF2', '/private/code/font.WOFF2', 'font/woff2'],
 	['fonts', 'site font %é.woff2', '/private/fonts/site font %é.woff2', 'font/woff2']
 ])(
 	'serves only the configured %s filename, including GET/HEAD',
@@ -88,7 +92,8 @@ test('does not publish bundled defaults through configured-file routes', async (
 	for (const [kind, filename] of [
 		['favicon', 'favicon.png'],
 		['opengraph', 'opengraph.png'],
-		['fonts', 'noto-sans.woff2']
+		['fonts', 'noto-sans.woff2'],
+		['fonts', 'noto-sans-mono.woff2']
 	])
 		expect((await request(kind, filename)).status).toBe(404)
 	expect(readConfiguredAsset).not.toHaveBeenCalled()
@@ -100,4 +105,13 @@ test('reads the selected file after rejecting an unrelated filename', async () =
 	expect(response.status).toBe(200)
 	expect(await response.text()).toBe('selected bytes')
 	expect(readConfiguredAsset).toHaveBeenCalledOnce()
+})
+
+test('never reads an ambiguous basename but allows a shared source', async () => {
+	config.content.fonts = { sans: '/sans/font.woff2', mono: '/mono/font.woff2' }
+	expect((await request('fonts', 'font.woff2')).status).toBe(404)
+	expect(readConfiguredAsset).not.toHaveBeenCalled()
+	config.content.fonts.mono = config.content.fonts.sans
+	expect((await request('fonts', 'font.woff2')).status).toBe(200)
+	expect(readConfiguredAsset).toHaveBeenCalledExactlyOnceWith(config, '/sans/font.woff2')
 })

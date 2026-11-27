@@ -31,7 +31,7 @@ describe('configured font selection', () => {
 			const bytes = new TextEncoder().encode('selected font')
 			vi.mocked(readConfiguredAsset).mockResolvedValue(bytes)
 			const config = configuration(source)
-			const response = await createSiteFontHandler(config)(request())
+			const response = await createSiteFontHandler(config)(path.basename(source), request())
 			expect(readConfiguredAsset).toHaveBeenCalledExactlyOnceWith(config, source)
 			expect(response.status).toBe(200)
 			expect(response.headers.get('content-type')).toBe('font/woff2')
@@ -43,7 +43,7 @@ describe('configured font selection', () => {
 		'does not read a font for omitted/default configuration %j',
 		async (raw) => {
 			const config = validateConfig(raw, {})
-			expect((await createSiteFontHandler(config)(request())).status).toBe(404)
+			expect((await createSiteFontHandler(config)('default.woff2', request())).status).toBe(404)
 			expect(readConfiguredAsset).not.toHaveBeenCalled()
 		}
 	)
@@ -54,7 +54,7 @@ describe('configured font selection', () => {
 			const config = configuration()
 			// Bypass validation to exercise the runtime guard.
 			config.content.fonts.sans = source
-			expect((await createSiteFontHandler(config)(request())).status).toBe(404)
+			expect((await createSiteFontHandler(config)(source, request())).status).toBe(404)
 			expect(readConfiguredAsset).not.toHaveBeenCalled()
 		}
 	)
@@ -62,7 +62,7 @@ describe('configured font selection', () => {
 	test('returns not found when the selected font cannot be read', async () => {
 		const config = configuration('missing.woff2')
 		vi.mocked(readConfiguredAsset).mockResolvedValue(undefined)
-		expect((await createSiteFontHandler(config)(request())).status).toBe(404)
+		expect((await createSiteFontHandler(config)('missing.woff2', request())).status).toBe(404)
 		expect(readConfiguredAsset).toHaveBeenCalledExactlyOnceWith(config, 'missing.woff2')
 	})
 
@@ -76,7 +76,7 @@ describe('configured font selection', () => {
 			await writeFile(path.join(directory, 'selected.WOFF2'), 'selected font')
 			const config = configuration('./selected.WOFF2')
 			config.paths.config = path.join(directory, 'config.yaml')
-			const response = await createSiteFontHandler(config)(request())
+			const response = await createSiteFontHandler(config)('selected.WOFF2', request())
 			expect(await response.text()).toBe('selected font')
 			expect(response.headers.get('content-type')).toBe('font/woff2')
 			expect(readConfiguredAsset).toHaveBeenCalledExactlyOnceWith(config, './selected.WOFF2')

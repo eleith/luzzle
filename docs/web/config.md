@@ -114,23 +114,32 @@ Custom images use `/assets/favicon/{filename}` and `/assets/opengraph/{filename}
 without the CDN prefix. Unavailable files return 404, not a bundled fallback.
 Files are reread on use. Piece-specific OG images still take precedence.
 
-## Local sans font
+## Fonts
+
+Luzzle supplies Noto Sans for text and Noto Sans Mono for code, in both the
+browser and worker-rendered Open Graph cards. Templates need no font imports.
+To replace either face, set only the role you want to change:
 
 ```yaml
 content:
   fonts:
     sans: ./content/fonts/my-font.woff2
+    mono: ./content/fonts/my-code-font.woff2
 theme:
   globals:
     font-sans-name: '"My Font"'
     font-sans-weight: "300 900"
+    font-mono-name: '"My Code Font"'
+    font-mono-weight: "400"
 ```
 
 Use a licensed WOFF2 file ≤5 MiB; match its family and weights. Paths follow the
 same rules as images. Browser and worker use this file; the browser URL is
 `/assets/fonts/{filename}`, with revalidation. Files are reread on use.
 Unavailable files return 404; the worker uses renderer fallback fonts.
-This overrides `font-sans-url`; omit it to keep existing defaults.
+`content.fonts.sans` overrides `font-sans-url`; `content.fonts.mono` overrides
+`font-mono-url`. Give different files distinct basenames because their public URLs
+share the same `/assets/fonts/` directory.
 
 `{filename}` is the URL-encoded basename, never directories. Browsers revalidate
 same-name changes. Filename config changes need a restart; old URLs return 404.

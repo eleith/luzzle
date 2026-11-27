@@ -28,6 +28,7 @@ pre.shiki code span,
 }
 
 [data-theme='dark'] pre.shiki,
+[data-theme='dark'] pre.shiki code,
 [data-theme='dark'] .markdown pre {
 	background-color: var(--shiki-dark-bg);
 }

@@ -191,6 +191,10 @@
 		width: 100%;
 	}
 
+	.terminal-content :global(pre.shiki code) {
+		display: block;
+	}
+
 	.terminal-content p {
 		margin: 0;
 	}

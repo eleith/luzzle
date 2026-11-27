@@ -1,1 +1,1 @@
-export { generateThemeCss } from './theme.js'
+export { fontFaceName, generateThemeCss } from './theme.js'

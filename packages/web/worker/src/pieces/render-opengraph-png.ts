@@ -1,5 +1,5 @@
 import { getPieceConfig } from '@luzzle/web.config'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { ImageResponse } from 'takumi-js/response'
@@ -8,34 +8,12 @@ import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { mapDefaultOpengraphFields } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import { generateThemeCss } from '@luzzle/web.theme'
-import { readConfiguredAsset } from '@luzzle/web.config/assets'
+import { loadOpengraphFonts } from './opengraph-fonts.js'
 import { renderAuthoredOpengraph, renderOpengraphFile } from '@luzzle/web.templates/server'
 import { defaultOpengraphFile, opengraphCaches, type OpengraphMode } from './opengraph-file-caches.js'
 
 const OpengraphImageWidth = 1200
 const OpengraphImageHeight = 630
-
-async function readFont(config: TemplateConfig): Promise<Buffer | null> {
-	const source = config.content.fonts.sans
-	if (source) {
-		const bytes = await readConfiguredAsset(config, source)
-		if (bytes) return Buffer.from(bytes)
-		console.warn('[render] Configured sans font unavailable. Takumi will use default fonts.')
-		return null
-	}
-
-	const fontUrl =
-		config.theme.globals['font-sans-url'].replace(/['"]/g, '') || '/fonts/noto-sans.woff2'
-	const staticDir = config.paths.config
-		? path.resolve(path.dirname(config.paths.config), config.paths.static)
-		: config.paths.static
-	const fontPath = path.join(staticDir, fontUrl)
-	if (!existsSync(fontPath)) {
-		console.warn(`[render] Font not found at "${fontPath}". Takumi will use default fonts.`)
-		return null
-	}
-	return readFileSync(fontPath)
-}
 
 const require = createRequire(import.meta.url)
 let packagedStylesheets: string[] | undefined
@@ -92,7 +70,7 @@ function prepareTakumiMarkup(rendered: { html: string; css: string }) {
 	const css = rendered.css.replace(/:where\(\.svelte-[a-z0-9]+\)/gi, '')
 	const body = rendered.html.replace(/<!--[\s\S]*?-->/g, '')
 	const style = `display:flex;width:${OpengraphImageWidth}px;height:${OpengraphImageHeight}px`
-	return `<style>${css}</style><div style="${style}">${body}</div>`
+	return `<html><style>${css}</style><div style="${style}">${body}</div></html>`
 }
 
 function getAssetsDirectory(config: TemplateConfig, outDir?: string): string {
@@ -109,7 +87,6 @@ export async function renderOpengraphPng(
 	outDir?: string,
 	mode: OpengraphMode = 'published'
 ): Promise<Buffer> {
-	const fontData = await readFont(config)
 	// Share images use fixed canvas typography, not responsive browser sizing.
 	const stylesheets = [
 		...getPackagedStylesheets(),
@@ -119,14 +96,11 @@ export async function renderOpengraphPng(
 	const rendered = await renderOpengraphHtml(piece, assets, config, mode)
 	const html = prepareTakumiMarkup(rendered)
 	const fetchedResources = loadLocalImageResources(getAssetsDirectory(config, outDir), rendered.pathsByUrl)
-	const globals = config.theme?.globals || {}
-	const fontName =
-		(globals['font-sans-name'] as string | undefined)?.replace(/['"]/g, '') || 'Noto Sans'
 	const response = new ImageResponse(html, {
 		width: OpengraphImageWidth,
 		height: OpengraphImageHeight,
 		css: stylesheets,
-		fonts: fontData ? [{ name: fontName, data: fontData }] : undefined,
+		fonts: await loadOpengraphFonts(config),
 		images: { sources: fetchedResources, allowUrl: () => false },
 		emoji: 'from-font',
 		onError: (err: unknown) => {

@@ -8,6 +8,7 @@ on:
       - '@luzzle/web.worker@*'
     paths:
       - 'packages/web/worker/**'
+      - 'apps/web/static/fonts/**'
       - 'packages/web/config/**'
       - 'packages/web/theme/**'
       - 'packages/web/db/**'
@@ -20,6 +21,7 @@ on:
       - main
     paths:
       - 'packages/web/worker/**'
+      - 'apps/web/static/fonts/**'
       - 'packages/web/config/**'
       - 'packages/web/theme/**'
       - 'packages/web/db/**'

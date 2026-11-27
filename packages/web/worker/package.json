@@ -6,12 +6,19 @@
 	"description": "luzzle publish worker — runs heavy jobs (transforms, rclone) handed off by the explorer",
 	"scripts": {
 		"lint": "eslint src",
+		"copy:fonts": "mkdir -p dist/fonts && cp ../../../apps/web/static/fonts/* dist/fonts/",
+		"predev": "pnpm run copy:fonts",
 		"dev": "node --experimental-strip-types --conditions=development --watch --import ../../../tools/register.mjs src/index.ts",
-		"build": "rm -rf dist && tsc -p tsconfig.build.json",
+		"prebuild": "rm -rf dist && pnpm run copy:fonts",
+		"build": "tsc -p tsconfig.build.json",
+		"pretest": "pnpm run copy:fonts",
 		"test": "vitest run --silent --coverage"
 	},
 	"engines": {
 		"node": ">=24"
+	},
+	"imports": {
+		"#bundled-fonts/*": "./dist/fonts/*"
 	},
 	"files": [
 		"dist/*",

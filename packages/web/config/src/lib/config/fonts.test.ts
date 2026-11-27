@@ -78,7 +78,10 @@ test("resolved fonts are required but sans has no schema default", () => {
 	expect(schema.properties.sans).not.toHaveProperty("default");
 	expect(Value.Default(schema, {})).toEqual({});
 	expect(Value.Check(schema, {})).toBe(true);
-	expectTypeOf<Config["content"]["fonts"]>().toEqualTypeOf<{ sans?: string }>();
+	expectTypeOf<Config["content"]["fonts"]>().toEqualTypeOf<{
+		sans?: string;
+		mono?: string;
+	}>();
 	expectTypeOf<keyof ConfigPublic["content"]>().toEqualTypeOf<
 		"text" | "images"
 	>();
@@ -191,4 +194,35 @@ test("checks missing variables, empty fallbacks and expanded extensions", () => 
 	expect(() =>
 		validateConfig(rawFont("./font.${EXT}"), { EXT: "ttf" }),
 	).toThrow(ConfigError);
+});
+
+test("defaults the mono face independently and supports a local override", () => {
+	const config = validateConfig(
+		{ content: { fonts: { mono: "${MONO}" } } },
+		{ MONO: "../code/font.WOFF2" },
+	);
+	expect(config.content.fonts).toEqual({ mono: "../code/font.WOFF2" });
+	expect(config.theme.globals).toMatchObject({
+		"font-mono-name": '"Noto Sans Mono"',
+		"font-mono-url": '"/fonts/noto-sans-mono.woff2"',
+		"font-mono-weight": "400",
+	});
+	expect(() =>
+		validateConfig(
+			{ content: { fonts: { mono: "${MONO}" } } },
+			{ MONO: "https://example.org/font.woff2" },
+		),
+	).toThrow("/content/fonts/mono");
+});
+
+test("different font sources must have different public basenames after interpolation", () => {
+	const raw = {
+		content: { fonts: { sans: "./sans/font.woff2", mono: "${MONO}" } },
+	};
+	expect(() => validateConfig(raw, { MONO: "./mono/font.woff2" })).toThrow(
+		"/content/fonts/mono",
+	);
+	expect(
+		validateConfig(raw, { MONO: raw.content.fonts.sans }).content.fonts.mono,
+	).toBe(raw.content.fonts.sans);
 });

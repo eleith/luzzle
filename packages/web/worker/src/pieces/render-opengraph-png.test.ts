@@ -6,6 +6,7 @@ import sharp from 'sharp'
 import { validateConfig } from '@luzzle/web.config'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
+import { loadOpengraphFonts } from './opengraph-fonts.js'
 import { renderOpengraphPng } from './render-opengraph-png.js'
 import { ImageResponse } from 'takumi-js/response'
 import type * as TakumiResponse from 'takumi-js/response'
@@ -83,26 +84,42 @@ afterAll(() => {
 describe('pieces/render-opengraph-png', () => {
 	test('keeps configured fonts and fixed root sizing in the PNG renderer', async () => {
 		const config = makeConfig()
-		const fontPath = path.resolve(import.meta.dirname, '../../assets/fonts/noto-sans.woff2')
-		const fontBytes = readFileSync(fontPath)
-		const localFont = path.join(TEMP_DIR, 'local-sans.woff2')
-		writeFileSync(localFont, fontBytes)
-		config.content.fonts = { sans: './local-sans.woff2' }
-		config.theme.globals = {
-			...config.theme.globals,
-			'font-sans-name': "'Noto Sans'",
-			'font-sans-url': "'/fonts/not-the-configured-font.woff2'",
-		}
+		const bundledDir = path.resolve(import.meta.dirname, '../../../../../apps/web/static/fonts')
+		const sans = readFileSync(path.join(bundledDir, 'noto-sans.woff2'))
+		const mono = readFileSync(path.join(bundledDir, 'noto-sans-mono.woff2'))
+		writeFileSync(path.join(TEMP_DIR, 'local-sans.woff2'), sans)
+		writeFileSync(path.join(TEMP_DIR, 'local-mono.woff2'), mono)
+		config.content.fonts = { sans: './local-sans.woff2', mono: './local-mono.woff2' }
+		Object.assign(config.theme.globals, {
+			'font-sans-name': "'Custom Sans'",
+			'font-mono-name': "'Custom Mono'",
+			'font-sans-url': "'/ignored-sans.woff2'",
+			'font-mono-url': "'/ignored-mono.woff2'",
+		})
 
 		expectPng(await renderOpengraphPng(makePiece(), [], config))
 		expect(vi.mocked(ImageResponse).mock.calls.at(-1)![1]).toEqual(
 			expect.objectContaining({
-				fonts: [{ name: 'Noto Sans', data: fontBytes }],
+				fonts: [
+					{ name: 'Custom Sans', generic: 'sans-serif', data: sans },
+					{ name: 'Custom Mono', generic: 'monospace', data: mono },
+				],
 				css: expect.arrayContaining([
 					':root { font-size: calc(var(--font-size-root) * 1px); }',
 				]),
 			})
 		)
+	})
+
+	test('loads a custom static URL before bundled fonts and skips unavailable configured files', async () => {
+		const config = makeConfig()
+		mkdirSync(path.join(TEMP_DIR, 'static'), { recursive: true })
+		writeFileSync(path.join(TEMP_DIR, 'static', 'custom.woff2'), 'static mono')
+		config.theme.globals['font-mono-url'] = '"/custom.woff2"'
+		config.content.fonts.sans = './missing.woff2'
+		expect(await loadOpengraphFonts(config)).toEqual([
+			{ name: 'Noto Sans Mono', generic: 'monospace', data: Buffer.from('static mono') },
+		])
 	})
 
 	test('isolates authored card module state and local covers between preview and publish', async () => {

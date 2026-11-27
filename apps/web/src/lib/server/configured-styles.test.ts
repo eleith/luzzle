@@ -141,7 +141,8 @@ test('CSS raw-text escaping preserves case, other less-than signs and dollar lit
 	expect(html.match(/<\/style/gi)).toHaveLength(1)
 	expect(html).toContain(content.replace(/<\/style/gi, (tag) => tag.replace('/', '\\/')))
 	expect(html).toContain('<\\/StYlE>')
-	expect(html).toContain('font-family: "Custom < Sans";')
+	expect(html).toContain('--font-sans-name: "Custom < Sans";')
+	expect(html).toContain('font-family: "Noto Sans";')
 	expect(html.match(/<body>/g)).toHaveLength(1)
 })
 

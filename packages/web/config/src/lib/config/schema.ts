@@ -406,16 +406,21 @@ export const siteImageDefaults = {
 	opengraph: "/images/opengraph.png",
 } as const;
 
+function localFont(face: "sans" | "mono") {
+	return Type.Optional(
+		localAssetFilenameSchema(
+			["woff2"],
+			`Local ${face} font filename (WOFF2), absolute or relative to the supplied config file. Different files must have distinct basenames. Supports explicit environment references. Omit to retain theme.globals.font-${face}-url.`,
+		),
+	);
+}
+
 const ContentSchema = Type.Object(
 	{
 		fonts: Type.Object(
 			{
-				sans: Type.Optional(
-					localAssetFilenameSchema(
-						["woff2"],
-						"Local sans font filename (WOFF2), absolute or relative to the supplied config file. Supports explicit environment references. Omit to retain theme.globals.font-sans-url.",
-					),
-				),
+				sans: localFont("sans"),
+				mono: localFont("mono"),
 			},
 			{ default: {}, additionalProperties: false },
 		),
@@ -667,8 +672,16 @@ const GlobalsSchema = Type.Object(
 				"0px 3px 1px -2px rgba(251 241 199 / 20%), 0px 2px 2px 0px rgba(251 241 199 / 14%), 0px 1px 5px 0px rgba(0 0 0 / 12%)",
 		}),
 		"font-mono-name": Type.String({
-			default: '"monaco, monospace"',
+			default: '"Noto Sans Mono"',
 			description: "CSS font-family value for monospace text.",
+		}),
+		"font-mono-url": Type.String({
+			default: '"/fonts/noto-sans-mono.woff2"',
+			description: "CSS-quoted font URL.",
+		}),
+		"font-mono-weight": Type.String({
+			default: "400",
+			description: "Font-face weight or variable font weight range.",
 		}),
 		"font-sans-name": Type.String({
 			default: '"Noto Sans"',
@@ -679,7 +692,7 @@ const GlobalsSchema = Type.Object(
 			description: "CSS-quoted font URL.",
 		}),
 		"font-sans-weight": Type.String({
-			default: "300 600",
+			default: "100 900",
 			description: "Font-face weight or variable font weight range.",
 		}),
 		"font-size-xxs": Type.String({ default: "0.7rem" }),
