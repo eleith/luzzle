@@ -190,11 +190,7 @@ test('does not fabricate attachment references for retained results without atta
 
 	expect(assembled.outputs).toStrictEqual([])
 	expect(assembled.piece.assets).toStrictEqual(passthroughs)
-	const helpers = createPieceHelpers(
-		assembled.piece.assets,
-		(path) => path,
-		() => '/piece'
-	)
+	const helpers = createPieceHelpers(assembled.piece.assets, (path) => path)
 	for (const key of ['pdf-key', 'unknown-key', 'missing-key']) {
 		expect(helpers.getPieceAssetUrl(key, 'attachment')).toBeUndefined()
 	}
@@ -323,8 +319,7 @@ test('exposes generated attachment downloads and prioritizes generated images ov
 	const assembled = assemblePreview(result, pieceConfig)
 	const helpers = createPieceHelpers(
 		assembled.piece.assets,
-		(path) => previewOutputUrl(path, 'preview-job')!,
-		() => '/piece'
+		(path) => previewOutputUrl(path, 'preview-job')!
 	)
 
 	expect(assembled.outputs.map((asset) => asset.asset_path)).toEqual([

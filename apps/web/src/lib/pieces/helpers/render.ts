@@ -2,7 +2,6 @@ import {
 	assetPathToUrl,
 	createPieceHelpers,
 	previewOutputUrl,
-	publicPieceHref,
 	type PieceComponentHelpers,
 	type PublicWebPiece
 } from '@luzzle/web.pieces'
@@ -25,7 +24,5 @@ export function createRenderHelpers(
 	context: RenderContext
 ): PieceComponentHelpers {
 	const buildAssetUrl = assetUrlBuilder(context)
-	return createPieceHelpers(piece.assets, buildAssetUrl, () =>
-		publicPieceHref(piece, context.appUrl)
-	)
+	return createPieceHelpers(piece.assets, buildAssetUrl)
 }

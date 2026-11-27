@@ -22,7 +22,6 @@ type Palette = {
 }
 
 type AssetHelpers = {
-	getPieceUrl(): string
 	getPieceImageUrl(
 		key: string | null | undefined,
 		minWidth: number,

@@ -10,7 +10,6 @@
 	const imageUrl = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, iconWidth, 'jpg') : undefined
 	)
-	const displayUrl = $derived(fields.url || helpers.getPieceUrl())
 	const titleSize = $derived(helpers.getTitleSizeRem(piece.title))
 	function getBylineHostname(url?: string): string | undefined {
 		if (!url) return undefined
@@ -75,7 +74,7 @@
 									></path></svg
 								>
 								<div class="browser-address-url">
-									{displayUrl}
+									{fields.url ?? ''}
 								</div>
 							</div>
 						</div>

@@ -10,7 +10,6 @@ export type PieceIconPalette = {
 }
 
 export type PieceComponentHelpers = {
-	getPieceUrl: () => string
 	getPieceImageUrl: (
 		image: PieceFrontMatterValue | string | undefined | null,
 		minWidth: number,
@@ -82,14 +81,13 @@ export function getTitleSizeRem(title: string): number {
 export const OpengraphImageWidth = 1200
 export const OpengraphImageHeight = 630
 
-export function publicPieceHref({ type, slug }: { type: string; slug: string }, appUrl = ''): string {
-	return `${appUrl.replace(/\/+$/, '')}/pieces/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
+export function publicPieceHref({ type, slug }: { type: string; slug: string }): string {
+	return `/pieces/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
 }
 
 export function createPieceHelpers(
 	assets: PublicWebPieceAsset[],
-	buildAssetUrl: (assetPath: string) => string | undefined,
-	buildPieceUrl: () => string
+	buildAssetUrl: (assetPath: string) => string | undefined
 ): PieceComponentHelpers {
 	const getPiecePalette = () => {
 		const paletteAsset = assets.find((a) => a.transformation === 'palette')
@@ -99,8 +97,6 @@ export function createPieceHelpers(
 	}
 
 	return {
-		getPieceUrl: buildPieceUrl,
-
 		getPieceAssetUrl: (key: string, transform: string) => {
 			const asset = assets.find((a) => a.asset_key === key && a.transformation === transform)
 			return asset?.asset_path ? buildAssetUrl(asset.asset_path) : undefined

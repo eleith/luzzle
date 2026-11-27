@@ -21,7 +21,6 @@
 	const iconWidth = 250
 	const iconHeight = (iconWidth * 3) / 2
 	const iconScale = Math.round((iconWidth / 375) * 100) / 100
-	const displayUrl = $derived(fields.url || helpers.getPieceUrl())
 	const iconImageUrl = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, iconWidth, 'jpg') : undefined
 	)
@@ -113,7 +112,7 @@
 								></path></svg
 							>
 							<div class="browser-address-url">
-								{displayUrl}
+								{fields.url ?? ''}
 							</div>
 						</div>
 					</div>

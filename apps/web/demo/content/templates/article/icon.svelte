@@ -11,7 +11,6 @@
 	const imageAvif = $derived(
 		fields.image ? helpers.getPieceImageUrl(fields.image, size.width, 'avif') : undefined
 	)
-	const displayUrl = $derived(fields.url || helpers.getPieceUrl())
 </script>
 
 <div
@@ -65,7 +64,7 @@
 					></path></svg
 				>
 				<div class="browser-address-url">
-					{displayUrl}
+					{fields.url ?? ''}
 				</div>
 			</div>
 		</div>

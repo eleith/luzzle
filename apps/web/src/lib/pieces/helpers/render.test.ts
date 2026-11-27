@@ -39,5 +39,4 @@ test('the same piece can render with independent published and preview contexts'
 	expect(published.getPieceAssetUrl('cover', 'image.original')).toBe(
 		assetPathToUrl('books/cover.jpg', 'https://cdn.example')
 	)
-	expect(preview.getPieceUrl()).toBe('https://public.example/pieces/books/a%20book')
 })

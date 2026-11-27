@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { ImageResponse } from 'takumi-js/response'
-import { assetPathToUrl, createPieceHelpers, publicPieceHref } from '@luzzle/web.pieces'
+import { assetPathToUrl, createPieceHelpers } from '@luzzle/web.pieces'
 import type { PublicWebPiece, PublicWebPieceAsset } from '@luzzle/web.pieces'
 import { mapDefaultOpengraphFields } from '@luzzle/web.templates/pieces/fields'
 import type { TemplateConfig } from '@luzzle/web.templates/config'
@@ -46,15 +46,11 @@ async function renderOpengraphHtml(
 	const pieceConfig = getPieceConfig(config.pieces, piece.type)
 	// Resolve rendered image URLs only to the validated paths used to produce them.
 	const pathsByUrl = new Map<string, string>()
-	const helpers = createPieceHelpers(
-		assets,
-		(assetPath) => {
-			const url = assetPathToUrl(assetPath, '')
-			if (url) pathsByUrl.set(url, assetPath)
-			return url
-		},
-		() => publicPieceHref(piece, config.url.app)
-	)
+	const helpers = createPieceHelpers(assets, (assetPath) => {
+		const url = assetPathToUrl(assetPath, '')
+		if (url) pathsByUrl.set(url, assetPath)
+		return url
+	})
 	const cache = opengraphCaches[mode]
 	const selection = pieceConfig?.templates?.opengraph
 	if (selection && 'file' in selection) {

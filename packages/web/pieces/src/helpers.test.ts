@@ -3,15 +3,10 @@ import { createPieceHelpers } from './helpers.js'
 import type { PublicWebPieceAsset } from '@luzzle/web.db'
 
 function makeHelpers(assets: PublicWebPieceAsset[] = [], buildAssetUrl = (path: string) => path) {
-	return createPieceHelpers(assets, buildAssetUrl, () => 'piece-url')
+	return createPieceHelpers(assets, buildAssetUrl)
 }
 
 describe('createPieceHelpers', () => {
-	test('getPieceUrl returns the value from buildPieceUrl', () => {
-		const helpers = makeHelpers()
-		expect(helpers.getPieceUrl()).toBe('piece-url')
-	})
-
 	test('getPiecePalette returns palette object if present', () => {
 		const paletteContent = JSON.stringify({
 			background: '#123456',
