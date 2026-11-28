@@ -3,6 +3,7 @@ import { createEventStream } from '../sse.js'
 import { WORKFLOW_POLL_INTERVAL_MS } from '../constants.js'
 import { getOpenWorkflowBackend } from './index.js'
 import { getWorkflowRun, getStepAttempts, type PublishPieceFailure } from '@luzzle/web.jobs'
+import { refreshIndexSpec } from '@luzzle/web.jobs/specs'
 import { parsePublishFailures, publicationWorkflowNames } from './publish.js'
 
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled'])
@@ -90,6 +91,11 @@ async function pollOnce(
 					if (run.workflow_name === 'Publish') {
 						failedPieces = parsePublishFailures(run.output)
 						if (failedPieces.length > 0) result = 'partial'
+					} else if (
+						run.workflow_name === refreshIndexSpec.name &&
+						run.output === JSON.stringify('partial')
+					) {
+						result = 'partial'
 					}
 				}
 

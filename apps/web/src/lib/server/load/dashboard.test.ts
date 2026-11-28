@@ -149,7 +149,7 @@ describe('loadDashboardPage', () => {
 			{ title: 'draft.article.md', hasPublishedVersion: false },
 			{ title: 'Nested title', hasPublishedVersion: false }
 		])
-		expect(mocks.getRecentlyEditedPieces).toHaveBeenCalledWith(expect.anything(), 5, [
+		expect(mocks.getRecentlyEditedPieces).toHaveBeenCalledWith(expect.anything(), 10, [
 			'article',
 			'bookmark'
 		])

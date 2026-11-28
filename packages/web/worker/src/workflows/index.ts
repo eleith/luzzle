@@ -5,11 +5,14 @@ import { registerPublishAuditWorkflow } from './publishAudit.js'
 import { registerTestConnectivityWorkflow } from './testConnectivity.js'
 import { registerUnpublishWorkflow } from './unpublish.js'
 
+import { registerRefreshIndexWorkflow } from './refresh-index.js'
+
 export function registerWorkflows(): void {
 	registerJobProgressPurgeWorkflow()
 	registerPreviewWorkflow()
 	registerPublishWorkflow()
 	registerPublishAuditWorkflow()
+	registerRefreshIndexWorkflow()
 	registerUnpublishWorkflow()
 	registerTestConnectivityWorkflow()
 }

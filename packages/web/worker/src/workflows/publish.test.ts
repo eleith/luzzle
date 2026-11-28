@@ -7,7 +7,7 @@ import { asCoreDatabase, migrate } from '@luzzle/core'
 import { validateConfig } from '@luzzle/web.config'
 import { createAppDb, runWebMigrations } from '@luzzle/web.db'
 import type { PublishPayload, PublishPiecePayload, PublishResult } from '@luzzle/web.jobs'
-import { publishSpec } from '@luzzle/web.jobs/specs'
+import { publishSpec, refreshIndexSpec } from '@luzzle/web.jobs/specs'
 import type { Workflow } from 'openworkflow'
 import { completed } from '../core/step.js'
 import { RcloneClient } from '../services/rclone.js'
@@ -17,13 +17,23 @@ import { archiveSyncStep } from '../steps/archive-sync.js'
 import { luzzleSyncStep } from '../steps/luzzle-sync.js'
 import type * as TransformRunner from '../transforms/runner.js'
 import { registerPublishWorkflow } from './publish.js'
+import { registerRefreshIndexWorkflow } from './refresh-index.js'
 
 type PublishInput = PublishPayload | PublishPiecePayload
 type PublishWorkflow = Workflow<PublishInput, PublishResult, PublishInput>['fn']
+type RefreshInput = Record<string, never>
+type RefreshWorkflow = Workflow<RefreshInput, 'ok' | 'partial', RefreshInput>['fn']
 type WorkflowStep = Parameters<PublishWorkflow>[0]['step']
 
+const inlineStep = {
+	run: async <Output>(
+		_config: { name: string },
+		fn: () => Promise<Output | undefined> | Output | undefined
+	) => (await fn()) as Output,
+} as WorkflowStep
+
 const mocks = vi.hoisted(() => ({
-	implementWorkflow: vi.fn<(spec: typeof publishSpec, fn: PublishWorkflow) => void>(),
+	implementWorkflow: vi.fn<(spec: { name: string }, fn: PublishWorkflow | RefreshWorkflow) => void>(),
 	produce: vi.fn<typeof TransformRunner.produceTransformsForPiece>(),
 	copy: vi.fn(),
 	cdn: vi.fn(),
@@ -134,7 +144,7 @@ describe('registered publication workflow', () => {
 		registerPublishWorkflow()
 		expect(mocks.implementWorkflow).toHaveBeenCalledOnce()
 		expect(mocks.implementWorkflow.mock.calls[0]![0]).toBe(publishSpec)
-		workflow = mocks.implementWorkflow.mock.calls[0]![1]
+		workflow = mocks.implementWorkflow.mock.calls[0]![1] as PublishWorkflow
 	})
 
 	afterEach(async () => {
@@ -153,15 +163,9 @@ describe('registered publication workflow', () => {
 	}
 
 	async function publish(input: PublishInput = {}, jobId = 'publish-test') {
-		const step = {
-			run: async <Output>(
-				_config: { name: string },
-				fn: () => Promise<Output | undefined> | Output | undefined
-			) => (await fn()) as Output,
-		} as WorkflowStep
 		return workflow({
 			input,
-			step,
+			step: inlineStep,
 			version: null,
 			run: { id: jobId, workflowName: publishSpec.name, createdAt: new Date(), startedAt: null },
 		})
@@ -200,6 +204,41 @@ describe('registered publication workflow', () => {
 	function clearEffects() {
 		for (const effect of [mocks.produce, mocks.copy, mocks.cdn, mocks.cache]) effect.mockClear()
 	}
+
+	test('refreshing the index picks up external drafts and edits without publishing them', async () => {
+		const unchanged = 'unchanged.books.md'
+		await writePiece(target, 'Published title')
+		await writePiece(unchanged, 'Unchanged title')
+		await publish()
+		const publishedBefore = await publicRows(target)
+		clearEffects()
+
+		vi.spyOn(Date, 'now').mockReturnValue(publishedAt + 20_000)
+		await writePiece(target, 'Edited on disk')
+		await writePiece(pending, 'Draft from disk')
+		expect((await getPendingPublication(ctx.db, ctx.config)).pieces).toEqual([])
+
+		registerRefreshIndexWorkflow()
+		const [spec, runRefresh] = mocks.implementWorkflow.mock.lastCall!
+		expect(spec).toBe(refreshIndexSpec)
+		const result = await (runRefresh as RefreshWorkflow)({
+			input: {},
+			step: inlineStep,
+			version: null,
+			run: { id: 'refresh-test', workflowName: spec.name, createdAt: new Date(), startedAt: null },
+		})
+
+		expect(result).toBe('ok')
+		expect((await getPendingPublication(ctx.db, ctx.config)).diff).toEqual({
+			added: [pending], updated: [target], pruned: [],
+		})
+		expect(await publicRows(target)).toEqual(publishedBefore)
+		const draft = await ctx.db.selectFrom('web_pieces').select('id').where('file_path', '=', pending).executeTakeFirst()
+		expect(draft).toBeUndefined()
+		for (const effect of [mocks.produce, mocks.copy, mocks.cdn, mocks.cache]) {
+			expect(effect).not.toHaveBeenCalled()
+		}
+	})
 
 	test('a queued filename publishes saved B without touching pending C or removed public D', async () => {
 		for (const filePath of [target, pending, removed]) await writePiece(filePath, 'Original')

@@ -3,7 +3,6 @@ import { luzzleSyncStep } from './luzzle-sync.js'
 import {
 	Pieces,
 	StorageFileSystem,
-	getDatabaseClient,
 	type Pieces as PiecesType,
 	type StorageFileSystem as StorageType,
 	type LuzzleTables,
@@ -16,17 +15,12 @@ import { Readable } from 'stream'
 vi.mock('@luzzle/core', () => ({
 	Pieces: vi.fn(),
 	StorageFileSystem: vi.fn(),
-	getDatabaseClient: vi.fn(),
-}))
-
-vi.mock('../services/db.js', () => ({
-	resolveDbPath: vi.fn(() => '/app/data/db.sqlite'),
+	asCoreDatabase: (db: MockDb) => db,
 }))
 
 const mocks = {
 	Pieces: vi.mocked(Pieces),
 	StorageFileSystem: vi.mocked(StorageFileSystem),
-	getDatabaseClient: vi.mocked(getDatabaseClient),
 }
 
 type MockDb = Kysely<LuzzleTables>
@@ -118,16 +112,14 @@ describe('luzzleSyncStep', () => {
 	})
 
 	test('runs schema sync and prune', async () => {
-		const mockDb = {} as unknown as MockDb
 		const mockPieces = makePieces()
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue(mockDb)
 
 		await luzzleSyncStep.run(undefined, ctx)
 
 		expect(StorageFileSystem).toHaveBeenCalledWith('/app/archive')
-		expect(mockPieces.sync).toHaveBeenCalledWith(mockDb, {})
-		expect(mockPieces.prune).toHaveBeenCalledWith(mockDb)
+		expect(mockPieces.sync).toHaveBeenCalledWith(ctx.db, {})
+		expect(mockPieces.prune).toHaveBeenCalledWith(ctx.db)
 	})
 
 	test('logs schema sync results', async () => {
@@ -141,7 +133,6 @@ describe('luzzleSyncStep', () => {
 			),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
@@ -161,15 +152,14 @@ describe('luzzleSyncStep', () => {
 				.mockResolvedValue(asyncIterable([{ error: true, name: 'bad', message: 'parse failed' }])),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
-		await luzzleSyncStep.run(undefined, ctx)
+		const result = await luzzleSyncStep.run(undefined, ctx)
 
 		expect(ctx.logger.warn).toHaveBeenCalledWith('schema sync error for bad: parse failed')
+		expect(result).toMatchObject({ status: 'completed', value: { hadErrors: true } })
 	})
 
 	test('runs item sync per type; returns added pieces in the diff', async () => {
-		const mockDb = {} as unknown as MockDb
 		const mockPiece = makePiece({
 			sync: vi.fn().mockResolvedValue(asyncIterable([{ action: 'added', file: 'books/book.md' }])),
 		})
@@ -179,12 +169,11 @@ describe('luzzleSyncStep', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue(mockDb)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
 		expect(result.status).toBe('completed')
-		expect(mockPiece.sync).toHaveBeenCalledWith(mockDb, ['books/book.md'], {})
+		expect(mockPiece.sync).toHaveBeenCalledWith(ctx.db, ['books/book.md'], {})
 		if (result.status === 'completed') {
 			expect(result.value.pieces.added).toEqual(['books/book.md'])
 		}
@@ -203,7 +192,6 @@ describe('luzzleSyncStep', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
 		await luzzleSyncStep.run(undefined, ctx)
 		expect(mockPiece.sync).toHaveBeenCalledWith(
@@ -232,7 +220,6 @@ describe('luzzleSyncStep', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 		if (result.status === 'completed') {
@@ -251,7 +238,6 @@ describe('luzzleSyncStep', () => {
 			),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
@@ -281,7 +267,6 @@ describe('luzzleSyncStep', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
 		await luzzleSyncStep.run(undefined, ctx)
 
@@ -299,7 +284,6 @@ describe('luzzleSyncStep', () => {
 			parseFilename: vi.fn().mockReturnValue({ type: 'books' }),
 		})
 		mockCoreConstructors(mockPieces)
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 
@@ -311,7 +295,6 @@ describe('luzzleSyncStep', () => {
 
 	test('returns completion message with changed count', async () => {
 		mockCoreConstructors(makePieces())
-		mocks.getDatabaseClient.mockReturnValue({} as unknown as MockDb)
 
 		const result = await luzzleSyncStep.run(undefined, ctx)
 		if (result.status === 'completed') {

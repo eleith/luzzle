@@ -1,12 +1,72 @@
 <script lang="ts">
+	import { refreshAll } from '$app/navigation'
 	import { resolve } from '$app/paths'
+	import { onDestroy } from 'svelte'
 	import { encodeArchivePath } from '#lib/pieces/navigation.js'
+	import { readJsonEvents } from '#lib/sse.js'
 	import PlusIcon from 'virtual:icons/ph/plus'
+	import ArrowClockwise from 'virtual:icons/ph/arrow-clockwise'
+	import ArchiveAction from './ArchiveAction.svelte'
+	import StatusBanner from './StatusBanner.svelte'
 	import ArrowCircleUpIcon from 'virtual:icons/ph/arrow-circle-up'
 	import FolderIcon from 'virtual:icons/ph/folder'
 	import type { PageData } from './$types'
 
 	let { data }: { data: PageData } = $props()
+
+	let refreshController: AbortController | undefined
+	let refreshing = $state(false)
+	let refreshError = $state('')
+	onDestroy(() => refreshController?.abort())
+
+	async function refreshIndex() {
+		if (refreshing) return
+		const controller = new AbortController()
+		refreshController = controller
+		const { signal } = controller
+		refreshing = true
+		refreshError = ''
+		try {
+			const response = await fetch(resolve('/(auth)/api/admin/jobs/refresh-index'), {
+				method: 'POST',
+				signal
+			})
+			if (response.status === 409) {
+				refreshError = 'Another archive job is running. Try again when it finishes.'
+				return
+			}
+			if (!response.ok) throw new Error('Could not start the index refresh.')
+			const { jobId } = await response.json()
+			if (typeof jobId !== 'string' || !jobId) throw new Error('No index refresh job was returned.')
+			const stream = await fetch(
+				resolve('/(auth)/api/admin/jobs/[id]/stream', { id: encodeURIComponent(jobId) }),
+				{ headers: { Accept: 'text/event-stream' }, signal }
+			)
+			if (!stream.ok || !stream.headers.get('content-type')?.startsWith('text/event-stream')) {
+				throw new Error('Could not connect to the index refresh.')
+			}
+			for await (const { type, data } of readJsonEvents(stream, signal)) {
+				if (type === 'error') throw new Error('Lost the connection to the index refresh.')
+				if (type !== 'done') continue
+				const outcome = data as { state?: string; result?: string } | null
+				if (outcome?.state !== 'completed') throw new Error('The index refresh failed.')
+				await refreshAll()
+				if (outcome.result === 'partial') {
+					refreshError = 'Some archive changes could not be indexed. Check the worker logs.'
+				}
+				return
+			}
+			throw new Error('Lost the connection to the index refresh.')
+		} catch (error) {
+			if (!signal.aborted) {
+				refreshError = error instanceof Error ? error.message : 'The index refresh failed.'
+			}
+		} finally {
+			controller.abort()
+			refreshController = undefined
+			refreshing = false
+		}
+	}
 
 	function relativeTime(when: string | number): string {
 		const diffSec = Math.round((new Date(when).getTime() - Date.now()) / 1000)
@@ -88,7 +148,16 @@
 	</section>
 
 	<section class="dashboard-section">
-		<h2 class="section-header">pending publication</h2>
+		<div class="pending-heading">
+			<h2 class="section-header">pending publication</h2>
+			<ArchiveAction disabled={refreshing} onclick={refreshIndex}>
+				<ArrowClockwise aria-hidden="true" />
+				{refreshing ? 'Refreshing…' : 'Refresh index'}
+			</ArchiveAction>
+		</div>
+		{#if refreshError}
+			<StatusBanner ok={false} message={refreshError} />
+		{/if}
 		{#if data.recentlyEditedPieces.length}
 			<div class="table-card">
 				<div class="recent-header" aria-hidden="true">
@@ -250,6 +319,14 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		margin: 0;
+	}
+
+	.pending-heading {
+		font-size: var(--font-size-xs);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
 	}
 
 	.stats-row {

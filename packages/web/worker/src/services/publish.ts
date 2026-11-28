@@ -147,7 +147,7 @@ export async function publishArchive(
 	if (input.bisync) await runProgressPhase(step, ctx, jobId, progress, archiveSyncStep, undefined)
 	const changes = await runProgressPhase(step, ctx, jobId, progress, luzzleSyncStep, undefined)
 	const plan = await runProgressPhase(step, ctx, jobId, progress, publishPrepareStep, {
-		summary: changes ?? emptyPiecesDiff(),
+		summary: changes ? { pieces: changes.pieces, schemas: changes.schemas } : emptyPiecesDiff(),
 		filePaths: input.filePaths,
 	})
 	if (!plan) throw new Error('Publication selection did not complete')

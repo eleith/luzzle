@@ -80,6 +80,10 @@ When saved Markdown matches the publication, the toolbar is quieter. **Publish**
 remains available in **More** to regenerate unchanged Markdown after attachment,
 template, or renderer changes.
 
+Use **Refresh index** next to **Pending publication** on `/admin` to pick up
+Markdown changes made outside Luzzle. It updates the local index without publishing
+or syncing with remote storage. The dashboard shows up to ten pending pieces.
+
 Use `/admin/publish` to check and publish archive changes. Check lists all pending changes. Choose which added or updated pieces to publish.
 Publishing reads saved files when the worker runs, so edits saved after Check or
 while the job is waiting may be included. Unselected edits stay pending.

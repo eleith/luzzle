@@ -49,6 +49,9 @@ export const publishAuditSpec: WorkflowSpec<PublishAuditPayload, PiecesDiff> = d
 	name: 'PublishAudit',
 })
 
+export const refreshIndexSpec: WorkflowSpec<Record<string, never>, 'ok' | 'partial'> =
+	defineWorkflowSpec<Record<string, never>, 'ok' | 'partial'>({ name: 'RefreshIndex' })
+
 export const unpublishSpec: WorkflowSpec<UnpublishPayload, UnpublishResult> = defineWorkflowSpec<
 	UnpublishPayload,
 	UnpublishResult

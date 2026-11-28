@@ -1,16 +1,21 @@
-import { Pieces, StorageFileSystem, getDatabaseClient, type PiecesDiff } from '@luzzle/core'
+import { Pieces, StorageFileSystem, asCoreDatabase, type PiecesDiff } from '@luzzle/core'
 import { completed, type Step, type StepResult } from '../core/step.js'
-import { resolveDbPath } from '../services/db.js'
 
-export const luzzleSyncStep: Step<void, PiecesDiff> = {
+type IndexRefresh = PiecesDiff & { hadErrors: boolean }
+
+export const luzzleSyncStep: Step<void, IndexRefresh> = {
 	name: 'luzzle.sync',
-	async run(_input, ctx): Promise<StepResult<PiecesDiff>> {
+	async run(_input, ctx): Promise<StepResult<IndexRefresh>> {
 		const { config, logger } = ctx
+		let hadErrors = false
+		function warn(message: string) {
+			hadErrors = true
+			logger.warn(message)
+		}
 		logger.info('luzzle.sync starting')
 
 		const storage = new StorageFileSystem(config.storage.root)
-		const dbPath = resolveDbPath(config)
-		const db = getDatabaseClient(dbPath)
+		const db = asCoreDatabase(ctx.db)
 
 		const pieces = new Pieces(storage)
 		const diff: PiecesDiff = {
@@ -21,7 +26,7 @@ export const luzzleSyncStep: Step<void, PiecesDiff> = {
 		const schemaSync = await pieces.sync(db, {})
 		for await (const result of schemaSync) {
 			if (result.error) {
-				logger.warn(`schema sync error for ${result.name}: ${result.message}`)
+				warn(`schema sync error for ${result.name}: ${result.message}`)
 			} else if (result.action === 'added') {
 				diff.schemas.added.push(result.name)
 				logger.info(`schema added: ${result.name}`)
@@ -34,7 +39,7 @@ export const luzzleSyncStep: Step<void, PiecesDiff> = {
 		const schemaPrune = await pieces.prune(db)
 		for await (const result of schemaPrune) {
 			if (result.error) {
-				logger.warn(`schema prune error for ${result.name}: ${result.message}`)
+				warn(`schema prune error for ${result.name}: ${result.message}`)
 			} else if (result.action === 'pruned') {
 				diff.schemas.pruned.push(result.name)
 				logger.info(`schema pruned: ${result.name}`)
@@ -52,7 +57,7 @@ export const luzzleSyncStep: Step<void, PiecesDiff> = {
 			const syncItems = await piece.sync(db, piecesOnDisk, {})
 			for await (const result of syncItems) {
 				if (result.error) {
-					logger.warn(`item sync error for ${result.file}: ${result.message}`)
+					warn(`item sync error for ${result.file}: ${result.message}`)
 				} else if (result.action === 'added') {
 					diff.pieces.added.push(result.file)
 					logger.info(`item added: ${result.file}`)
@@ -65,7 +70,7 @@ export const luzzleSyncStep: Step<void, PiecesDiff> = {
 			const pruneItems = await piece.prune(db, piecesOnDisk)
 			for await (const result of pruneItems) {
 				if (result.error) {
-					logger.warn(`item prune error for ${result.file}: ${result.message}`)
+					warn(`item prune error for ${result.file}: ${result.message}`)
 				} else if (result.action === 'pruned') {
 					diff.pieces.pruned.push(result.file)
 					logger.info(`item pruned: ${result.file}`)
@@ -75,6 +80,6 @@ export const luzzleSyncStep: Step<void, PiecesDiff> = {
 
 		const changedCount = diff.pieces.added.length + diff.pieces.updated.length
 		logger.info('luzzle.sync complete', { changed: changedCount })
-		return completed(diff, `${changedCount} pieces changed`)
+		return completed({ ...diff, hadErrors }, `${changedCount} pieces changed`)
 	},
 }

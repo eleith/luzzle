@@ -8,6 +8,8 @@ import type { PieceStats } from '#lib/server/dashboardStats.js'
 import type { DashboardView } from '#lib/server/load/dashboard.js'
 import Page from './+page.svelte'
 
+vi.mock('$app/navigation', () => ({ refreshAll: vi.fn() }))
+
 vi.mock('$app/paths', () => ({
 	resolve: vi.fn((route: string, params?: { path: string }) => {
 		const path = route.replace('/(auth)', '').replace('[...path]', () => params?.path ?? '')
@@ -121,6 +123,7 @@ test('both recent sections explain their empty state', () => {
 	expect(output).toContain('pending publication')
 	expect(output.indexOf('pending publication')).toBeLessThan(output.indexOf('recently published'))
 	expect(output).toContain('No pieces pending publication.')
+	expect(output).toContain('Refresh index')
 })
 
 test('pending rows show draft or changes status instead of edit time, alongside their published version', () => {

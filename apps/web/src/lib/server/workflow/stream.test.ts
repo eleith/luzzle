@@ -473,6 +473,18 @@ describe('streamJobProgress', () => {
 		expect(chunks.join('')).not.toContain('"result":"ok"')
 	})
 
+	test('reports an incomplete index refresh as partial', async () => {
+		mocks.getWorkflowRun.mockResolvedValue({
+			...run,
+			workflow_name: 'RefreshIndex',
+			output: JSON.stringify('partial')
+		})
+		const chunks = await readChunks(openStream({ jobClass: 'RefreshIndex' }))
+		expect(chunks.at(-1)).toBe(
+			'event: done\ndata: {"state":"completed","result":"partial","errors":null}\n\n'
+		)
+	})
+
 	test.each(['Preview', 'PublishAudit', 'Unpublish'])(
 		'keeps non-publish completion semantics unchanged for %s',
 		async (workflow_name) => {

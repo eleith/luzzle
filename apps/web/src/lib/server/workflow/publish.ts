@@ -1,6 +1,7 @@
 import type { BackendSqlite } from 'openworkflow/sqlite'
 import { getLatestWorkflowRun, getWorkflowRun, type PublishPieceFailure } from '@luzzle/web.jobs'
 import type { PiecesDiff } from '@luzzle/core'
+import { refreshIndexSpec } from '@luzzle/web.jobs/specs'
 
 export const publicationWorkflowNames = ['Publish', 'PublishAudit', 'Unpublish']
 
@@ -24,7 +25,7 @@ export async function withPublishAdmission<T>(operation: () => Promise<T>): Prom
 export async function findInFlightPublishRun(
 	backend: Pick<BackendSqlite, 'listWorkflowRuns'>
 ): Promise<{ id: string } | null> {
-	for (const workflowName of publicationWorkflowNames) {
+	for (const workflowName of [...publicationWorkflowNames, refreshIndexSpec.name]) {
 		const { data } = await backend.listWorkflowRuns({ workflowName, limit: 5 })
 		const active = data.find((run) => run.status === 'pending' || run.status === 'running')
 		if (active) return { id: active.id }

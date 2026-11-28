@@ -6,6 +6,7 @@
 	import PublishTable from './PublishTable.svelte'
 	import PublishDetails from './PublishDetails.svelte'
 
+	import ArchiveAction from '../ArchiveAction.svelte'
 	import ArrowClockwise from 'virtual:icons/ph/arrow-clockwise'
 	import ArrowsClockwise from 'virtual:icons/ph/arrows-clockwise'
 	import CheckCircleFill from 'virtual:icons/ph/check-circle-fill'
@@ -382,23 +383,16 @@
 	<header class="publish-header">
 		<h1>Publish</h1>
 		<div class="check-actions">
-			<button
-				type="button"
-				class="check-action"
-				onclick={() => getChanges({ syncRemote: false })}
-				disabled={busy}
-			>
+			<ArchiveAction onclick={() => getChanges({ syncRemote: false })} disabled={busy}>
 				<ArrowClockwise aria-hidden="true" /> Check
-			</button>
-			<button
-				type="button"
-				class="check-action"
+			</ArchiveAction>
+			<ArchiveAction
 				onclick={() => getChanges({ syncRemote: true })}
 				disabled={busy}
 				title="Sync archive with remote, then check"
 			>
 				<ArrowsClockwise aria-hidden="true" /> Sync &amp; Check
-			</button>
+			</ArchiveAction>
 		</div>
 	</header>
 
@@ -531,30 +525,6 @@
 		align-items: center;
 		gap: var(--space-2);
 		margin-left: auto;
-	}
-
-	.check-action {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--space-1);
-		padding: var(--space-2);
-		border: none;
-		background: none;
-		font: inherit;
-		color: var(--color-on-surface-variant);
-		cursor: pointer;
-	}
-
-	.check-action:hover {
-		color: var(--color-primary);
-	}
-	.check-action:disabled {
-		cursor: not-allowed;
-		opacity: 0.5;
-	}
-	button:focus-visible {
-		outline: 2px solid var(--color-primary);
-		outline-offset: 2px;
 	}
 
 	.status-line {

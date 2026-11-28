@@ -144,7 +144,8 @@ describe('findInFlightPublishRun', () => {
 		expect(list.mock.calls.map(([params]) => params)).toEqual([
 			{ workflowName: 'Publish', limit: 5 },
 			{ workflowName: 'PublishAudit', limit: 5 },
-			{ workflowName: 'Unpublish', limit: 5 }
+			{ workflowName: 'Unpublish', limit: 5 },
+			{ workflowName: 'RefreshIndex', limit: 5 }
 		])
 		expect(count).not.toHaveBeenCalled()
 	})

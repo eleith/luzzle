@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance, type ActionResult } from '$app/forms'
-	import CheckCircleIcon from 'virtual:icons/ph/check-circle'
-	import WarningCircleIcon from 'virtual:icons/ph/warning-circle'
+	import StatusBanner from '../StatusBanner.svelte'
 	import SpinnerIcon from 'virtual:icons/ph/spinner'
 	import type { PageData } from './$types'
 
@@ -138,18 +137,10 @@
 
 {#snippet banner(result: TestResult)}
 	{#if result}
-		<aside class="banner {result.ok ? 'banner-success' : 'banner-error'}" role="alert">
-			<span class="banner-icon">
-				{#if result.ok}
-					<CheckCircleIcon aria-hidden="true" />
-				{:else}
-					<WarningCircleIcon aria-hidden="true" />
-				{/if}
-			</span>
-			<p class="banner-text">
-				{result.ok ? 'up' : `down: ${result.reason ?? 'unknown error'}`}
-			</p>
-		</aside>
+		<StatusBanner
+			ok={result.ok}
+			message={result.ok ? 'up' : `down: ${result.reason ?? 'unknown error'}`}
+		/>
 	{/if}
 {/snippet}
 
@@ -511,36 +502,6 @@
 		to {
 			transform: rotate(360deg);
 		}
-	}
-
-	.banner {
-		display: flex;
-		align-items: flex-start;
-		gap: var(--space-2);
-		margin: 0;
-		padding: var(--space-2) var(--space-4);
-		font-size: var(--font-size-xs);
-	}
-
-	.banner-icon {
-		display: inline-flex;
-		flex-shrink: 0;
-		margin-top: 0.1em;
-	}
-
-	.banner-text {
-		margin: 0;
-		overflow-wrap: anywhere;
-	}
-
-	.banner-success {
-		background: var(--color-primary-container);
-		color: var(--color-on-primary-container);
-	}
-
-	.banner-error {
-		background: var(--color-error-container);
-		color: var(--color-on-error-container);
 	}
 
 	@media screen and (min-width: 768px) {

@@ -35,7 +35,7 @@ export interface DashboardView {
 
 async function loadRecentlyEditedPieces(): Promise<DashboardView['recentlyEditedPieces']> {
 	const types = getConfiguredPieceTypes()
-	const sources = await getRecentlyEditedPieces(db, 5, types)
+	const sources = await getRecentlyEditedPieces(db, 10, types)
 
 	return sources.map(({ frontmatter_json, publishedHash, publishedAt, ...piece }) => {
 		const { fields } = getPieceConfig(config.pieces, piece.type)!
