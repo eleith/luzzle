@@ -1,7 +1,5 @@
-import { isConfiguredPieceType } from '#lib/pieces/types.server.js'
 import type { RequestHandler } from './$types'
-import { getPieces } from '#lib/server/pieces.js'
-import { getPiecePublicationState } from '#lib/pieces/publication.server.js'
+import { validatePublicationPath } from '#lib/server/publication-path.js'
 import { getOpenWorkflow, getOpenWorkflowBackend } from '#lib/server/workflow/index.js'
 import {
 	findInFlightPublishRun,
@@ -11,29 +9,11 @@ import {
 import { publishSpec } from '@luzzle/web.jobs/specs'
 import type { PublishPayload, PublishPiecePayload } from '@luzzle/web.jobs'
 
-function isCanonicalMarkdownPath(value: unknown): value is string {
-	if (typeof value !== 'string') return false
-	if (!value || /[\\\p{Control}]/u.test(value) || /^[A-Za-z]:/.test(value)) return false
-	if (!value.endsWith('.md')) return false
-	return value.split('/').every((part) => part !== '' && part !== '.' && part !== '..')
-}
-
 interface PublishRequestBody {
 	filePath?: unknown
 	filePaths?: unknown
 	auditRunId?: unknown
 	bisync?: unknown
-}
-
-function validatePiecePath(value: unknown): string | Response {
-	if (!isCanonicalMarkdownPath(value)) {
-		return Response.json({ message: 'Expected a canonical Markdown filePath' }, { status: 400 })
-	}
-	const { type, format } = getPieces().parseFilename(value)
-	if (!type || format !== '.md' || !isConfiguredPieceType(type)) {
-		return Response.json({ message: 'Unsupported piece type' }, { status: 400 })
-	}
-	return value
 }
 
 async function prepareArchivePublish(
@@ -68,25 +48,12 @@ async function prepareArchivePublish(
 	return input
 }
 
-export const GET: RequestHandler = async ({ url }) => {
-	try {
-		const filePath = validatePiecePath(url.searchParams.get('filePath'))
-		if (filePath instanceof Response) return filePath
-		return Response.json(await getPiecePublicationState(filePath), {
-			headers: { 'Cache-Control': 'no-store' }
-		})
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error)
-		return new Response(`Internal server error: ${message}`, { status: 500 })
-	}
-}
-
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const body: PublishRequestBody | null = await request.json().catch(() => ({}))
 		let filePath: string | undefined
 		if (Object.hasOwn(body ?? {}, 'filePath')) {
-			const validatedPath = validatePiecePath(body?.filePath)
+			const validatedPath = validatePublicationPath(body?.filePath)
 			if (validatedPath instanceof Response) return validatedPath
 			filePath = validatedPath
 		}

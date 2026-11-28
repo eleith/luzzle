@@ -46,9 +46,12 @@ test.each([
 	'/admin/view/preview/[jobId]',
 	'/admin/open/[piece]/[slug]',
 	'/api/admin/generate',
-	'/api/admin/unpublish',
-	'/api/admin/publish/[id]/stream',
-	'/api/admin/preview/[id]/stream'
+	'/api/admin/publication-status',
+	'/api/admin/jobs/publish',
+	'/api/admin/jobs/publish-audit',
+	'/api/admin/jobs/unpublish',
+	'/api/admin/jobs/refresh-index',
+	'/api/admin/jobs/[id]/stream'
 ])('%s has an auth-grouped route ID without changing its public path', (path) => {
 	const ids = routeIds.filter((id) => publicPath(id) === path)
 	expect(ids).toEqual([`/(auth)${path}`])

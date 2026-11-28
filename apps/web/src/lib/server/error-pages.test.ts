@@ -15,7 +15,7 @@ vi.mock('$app/manifest', () => ({
 		{ id: '/(root)', page: true, endpoint: false },
 		{ id: '/search', page: true, endpoint: true },
 		{ id: '/api/health', page: false, endpoint: true },
-		{ id: '/(auth)/api/admin/publish', page: false, endpoint: true }
+		{ id: '/(auth)/api/admin/jobs/publish', page: false, endpoint: true }
 	]
 }))
 vi.mock('#lib/server/pages.js', () => ({ loadPageMarkdown: fixture.loadPageMarkdown }))
@@ -117,8 +117,8 @@ test('unmatched framework 404 uses the distinct not-found body', async () => {
 test.each([
 	{ routeId: '/api/health', accept: 'application/json' },
 	{ routeId: '/api/health', accept: 'text/html' },
-	{ routeId: '/(auth)/api/admin/publish', accept: 'text/html' },
-	{ routeId: '/(auth)/api/admin/publish', isDataRequest: true },
+	{ routeId: '/(auth)/api/admin/jobs/publish', accept: 'text/html' },
+	{ routeId: '/(auth)/api/admin/jobs/publish', isDataRequest: true },
 	{ accept: 'application/json' },
 	{ accept: 'application/json, text/html' },
 	{ accept: 'text/html;q=0.2, application/json;q=0.9' },

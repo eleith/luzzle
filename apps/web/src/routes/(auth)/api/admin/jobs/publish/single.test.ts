@@ -27,7 +27,7 @@ let queue: WorkflowQueue
 
 function event(body: unknown = { filePath }) {
 	return {
-		request: new Request('http://localhost/api/admin/publish', {
+		request: new Request('http://localhost/api/admin/jobs/publish', {
 			method: 'POST',
 			body: JSON.stringify(body)
 		})

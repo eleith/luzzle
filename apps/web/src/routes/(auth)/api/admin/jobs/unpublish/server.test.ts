@@ -18,7 +18,7 @@ beforeEach(() => {
 
 function event(body: unknown) {
 	return {
-		request: new Request('http://localhost/api/admin/unpublish', {
+		request: new Request('http://localhost/api/admin/jobs/unpublish', {
 			method: 'POST',
 			body: JSON.stringify(body)
 		})
@@ -51,7 +51,7 @@ test.each([
 })
 
 test('rejects malformed JSON without queueing work', async () => {
-	const request = new Request('http://localhost/api/admin/unpublish', {
+	const request = new Request('http://localhost/api/admin/jobs/unpublish', {
 		method: 'POST',
 		body: '{'
 	})

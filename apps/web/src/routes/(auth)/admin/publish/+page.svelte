@@ -219,7 +219,7 @@
 	function startWatching(id: string) {
 		eventSource?.close()
 		streamDisconnected = false
-		eventSource = new EventSource(`/api/admin/publish/${id}/stream`)
+		eventSource = new EventSource(`/api/admin/jobs/${encodeURIComponent(id)}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
 			const payload = JSON.parse(e.data)
@@ -328,7 +328,7 @@
 		if (disposed || busy) return
 		checkingAfterPublication = afterPublication
 		auditRunId = ''
-		trigger('/api/admin/publish/audit', { bisync: syncRemote }, 'audit', afterPublication)
+		trigger('/api/admin/jobs/publish-audit', { bisync: syncRemote }, 'audit', afterPublication)
 	}
 
 	function handlePublish() {
@@ -339,7 +339,7 @@
 		publishingPaths = filePaths
 		publicationState = 'none'
 		publicationError = ''
-		trigger('/api/admin/publish', { auditRunId: checkedRunId, filePaths }, 'publish')
+		trigger('/api/admin/jobs/publish', { auditRunId: checkedRunId, filePaths }, 'publish')
 	}
 
 	onMount(() => {

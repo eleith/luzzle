@@ -62,7 +62,7 @@ test('new viewer HTML/data and preview PNG/stream stay private; login returns to
 	for (const url of [
 		assetUrl(appServer.previews.notebook, notebook.previewAsset),
 		shareAssetUrl(appServer.previews.completed),
-		`/api/admin/preview/${appServer.previews.completed}/stream`
+		`/api/admin/jobs/${appServer.previews.completed}/stream`
 	]) {
 		const response = await request.get(url)
 		expect(response.status()).toBe(401)
@@ -356,10 +356,8 @@ test('live Preview streams close on job switch, resubscribe to the current job a
 }) => {
 	const pending = previewUrl(appServer.previews.pending)
 	const completed = previewUrl(appServer.previews.completed)
-	const stream = new URL(
-		`/api/admin/preview/${appServer.previews.pending}/stream`,
-		appServer.origin
-	).href
+	const stream = new URL(`/api/admin/jobs/${appServer.previews.pending}/stream`, appServer.origin)
+		.href
 	const events: PreviewStreamEvent[] = []
 	await page.exposeFunction('observePreviewStream', (event: PreviewStreamEvent) =>
 		events.push(event)

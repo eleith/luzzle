@@ -25,13 +25,7 @@ async function signIn(page: Page, editorUrl: string) {
 
 test.beforeEach(async ({ page }) => {
 	// Allow real read-only metadata, but never start live publication or Preview jobs.
-	await page.route(/\/api\/admin\/(?:publish|unpublish)(?:\/[^?]*)?(?:\?.*)?$/, (route) => {
-		const request = route.request()
-		if (request.method() === 'GET' && new URL(request.url()).pathname === '/api/admin/publish') {
-			return route.fallback()
-		}
-		return route.abort()
-	})
+	await page.route('**/api/admin/jobs/**', (route) => route.abort())
 	await page.route(/\/admin\/piece\/.*\/preview(?:\/[^?]*)?(?:\?.*)?$/, (route) => route.abort())
 })
 
@@ -75,17 +69,17 @@ test('publication adds the public link and confirmed unpublish removes it even i
 	await expect(page.getByRole('menuitem', { name: 'Published details' })).toHaveCount(0)
 	await page.keyboard.press('Escape')
 
-	await page.route('**/api/admin/publish', (route) =>
+	await page.route('**/api/admin/jobs/publish', (route) =>
 		route.fulfill({ status: 202, json: { jobId: 'first-publication' } })
 	)
-	await page.route('**/api/admin/publish/first-publication/stream', (route) =>
+	await page.route('**/api/admin/jobs/first-publication/stream', (route) =>
 		route.fulfill({
 			contentType: 'text/event-stream',
 			body: 'event: done\ndata: {"workflowName":"Publish","state":"completed","result":"ok"}\n\n'
 		})
 	)
 	const publicPath = '/pieces/notes/new-public-slug'
-	await page.route(`**/api/admin/publish?filePath=${file}`, (route) =>
+	await page.route(`**/api/admin/publication-status?filePath=${file}`, (route) =>
 		route.fulfill({
 			json: { hasPublishedVersion: true, markdownPublicationStatus: 'matching', publicPath }
 		})
@@ -95,16 +89,16 @@ test('publication adds the public link and confirmed unpublish removes it even i
 	await more.click()
 	await expect(publicPage).toHaveAttribute('href', `${appServer.origin}${publicPath}`)
 
-	await page.route('**/api/admin/unpublish', (route) =>
+	await page.route('**/api/admin/jobs/unpublish', (route) =>
 		route.fulfill({ status: 202, json: { jobId: 'remove-publication' } })
 	)
-	await page.route('**/api/admin/publish/remove-publication/stream', (route) =>
+	await page.route('**/api/admin/jobs/remove-publication/stream', (route) =>
 		route.fulfill({
 			contentType: 'text/event-stream',
 			body: 'event: done\ndata: {"workflowName":"Unpublish","state":"completed","result":"ok"}\n\n'
 		})
 	)
-	await page.route(`**/api/admin/publish?filePath=${file}`, (route) =>
+	await page.route(`**/api/admin/publication-status?filePath=${file}`, (route) =>
 		route.fulfill({ status: 500, json: { message: 'Status temporarily unavailable' } })
 	)
 	await page.getByRole('menuitem', { name: 'Unpublish', exact: true }).click()
@@ -291,12 +285,12 @@ test('pending Publish allows saving and typing; failed metadata refresh retains 
 	const file = 'forest.notes.md'
 	const editorUrl = '/admin/piece/forest.notes.md/source'
 	const jobId = 'e2e-forest-publication'
-	const streamUrl = `**/api/admin/publish/${jobId}/stream`
+	const streamUrl = `**/api/admin/jobs/${jobId}/stream`
 	let finishPublication!: () => void
 	const publicationFinished = new Promise<void>((resolve) => {
 		finishPublication = resolve
 	})
-	await page.route('**/api/admin/publish', (route) => {
+	await page.route('**/api/admin/jobs/publish', (route) => {
 		if (route.request().method() !== 'POST') return route.fallback()
 		return route.fulfill({ status: 202, json: { jobId } })
 	})
@@ -322,7 +316,7 @@ test('pending Publish allows saving and typing; failed metadata refresh retains 
 		await expect(publication).toHaveText('Up to date')
 		const acceptedRequest = page.waitForRequest(
 			(request) =>
-				request.method() === 'POST' && new URL(request.url()).pathname === '/api/admin/publish'
+				request.method() === 'POST' && new URL(request.url()).pathname === '/api/admin/jobs/publish'
 		)
 		const pendingStream = page.waitForRequest(streamUrl)
 		await page.getByRole('button', { name: 'More', exact: true }).click()
@@ -344,7 +338,9 @@ test('pending Publish allows saving and typing; failed metadata refresh retains 
 		expect(draftSource).not.toBe(savedSource)
 
 		await page.route(
-			(url) => url.pathname === '/api/admin/publish' && url.searchParams.get('filePath') === file,
+			(url) =>
+				url.pathname === '/api/admin/publication-status' &&
+				url.searchParams.get('filePath') === file,
 			(route) => route.fulfill({ status: 500, json: { message: 'Status temporarily unavailable' } })
 		)
 		finishPublication()

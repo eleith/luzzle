@@ -56,13 +56,13 @@ test('posts the exact file and waits for its own completion, not just admission'
 	})
 	await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
 	expect(settled).toBe(false)
-	expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/unpublish', {
+	expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/jobs/unpublish', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ filePath }),
 		signal: observer.signal
 	})
-	expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/publish/job-1/stream', {
+	expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/jobs/job-1/stream', {
 		headers: { Accept: 'text/event-stream' },
 		signal: observer.signal
 	})
@@ -205,7 +205,7 @@ test('publishes through the shared transport and waits for Publish completion', 
 		state: 'completed',
 		jobId: 'job-1'
 	})
-	expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/publish', {
+	expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/jobs/publish', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ filePath }),
@@ -247,7 +247,7 @@ test('reads publication state for the exact filename with a cancellable GET', as
 	await expect(getPublicationState(filePath, observer.signal)).resolves.toEqual(state)
 
 	expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-		`/api/admin/publish?${new URLSearchParams({ filePath })}`,
+		`/api/admin/publication-status?${new URLSearchParams({ filePath })}`,
 		{ signal: observer.signal }
 	)
 })

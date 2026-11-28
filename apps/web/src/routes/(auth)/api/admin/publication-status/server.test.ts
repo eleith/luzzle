@@ -25,7 +25,7 @@ vi.mock('#lib/server/workflow/publish.js', () => ({
 
 const filePath = '書 shelves/été?draft=1&tag=#%.books.md'
 function event(path: string | null = filePath) {
-	const url = new URL('http://localhost/api/admin/publish')
+	const url = new URL('http://localhost/api/admin/publication-status')
 	if (path !== null) url.search = new URLSearchParams({ filePath: path }).toString()
 	return { url } as Parameters<typeof GET>[0]
 }

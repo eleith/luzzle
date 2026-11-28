@@ -39,7 +39,7 @@
 	function startWatching() {
 		if (eventSource) eventSource.close()
 		streamDisconnected = false
-		eventSource = new EventSource(`/api/admin/preview/${encodeURIComponent(data.job)}/stream`)
+		eventSource = new EventSource(`/api/admin/jobs/${encodeURIComponent(data.job)}/stream`)
 
 		eventSource.addEventListener('state', (e) => {
 			const d = JSON.parse(e.data)

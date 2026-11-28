@@ -10,7 +10,7 @@ import {
 	type WorkflowQueue
 } from '#lib/server/workflow/publish.fixture.js'
 import { POST as publish } from './+server.js'
-import { POST as audit } from './audit/+server.js'
+import { POST as audit } from '../publish-audit/+server.js'
 import { POST as unpublish } from '../unpublish/+server.js'
 
 const { runWorkflow } = vi.hoisted(() => ({ runWorkflow: vi.fn() }))
@@ -31,7 +31,7 @@ const auditDiff = {
 
 function event(body: unknown = {}) {
 	return {
-		request: new Request('http://localhost/api/admin/publish', {
+		request: new Request('http://localhost/api/admin/jobs/publish', {
 			method: 'POST',
 			body: JSON.stringify(body)
 		})
@@ -464,7 +464,7 @@ describe('publication admission', () => {
 			bisync: true
 		})
 		await completeNextRun(queue.backend)
-		const malformedPublish = new Request('http://localhost/api/admin/publish', {
+		const malformedPublish = new Request('http://localhost/api/admin/jobs/publish', {
 			method: 'POST',
 			body: '{'
 		})
@@ -475,7 +475,7 @@ describe('publication admission', () => {
 			bisync: false
 		})
 		await completeNextRun(queue.backend)
-		const request = new Request('http://localhost/api/admin/publish/audit', {
+		const request = new Request('http://localhost/api/admin/jobs/publish-audit', {
 			method: 'POST',
 			body: '{'
 		})

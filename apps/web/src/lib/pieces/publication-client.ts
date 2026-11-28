@@ -63,7 +63,7 @@ export async function getPublicationState(
 	signal: AbortSignal
 ): Promise<PiecePublicationState> {
 	const query = new URLSearchParams({ filePath })
-	const response = await fetch(`/api/admin/publish?${query}`, { signal })
+	const response = await fetch(`/api/admin/publication-status?${query}`, { signal })
 	if (!response.ok || response.redirected) {
 		throw new Error('Failed to read publication state')
 	}
@@ -102,7 +102,7 @@ async function observePublicationJob(
 	signal: AbortSignal
 ): Promise<PublicationOutcome | undefined> {
 	try {
-		const stream = await fetch(`/api/admin/publish/${encodeURIComponent(jobId)}/stream`, {
+		const stream = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}/stream`, {
 			headers: { Accept: 'text/event-stream' },
 			signal
 		})
@@ -154,7 +154,7 @@ export async function submitPublication(
 ): Promise<PublicationOutcome | undefined> {
 	if (signal.aborted) return
 	try {
-		const response = await fetch(`/api/admin/${action}`, {
+		const response = await fetch(`/api/admin/jobs/${action}`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ filePath }),
